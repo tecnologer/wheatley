@@ -58,8 +58,12 @@ class UserTwitch:
         response = get(url, headers=headers)
         if response.status_code != 200:
             return response.text
+        dataRes = json.loads(response.text)
+        if not "data" in dataRes or len(dataRes["data"]) < 1 or not "id" in dataRes["data"][0]:
+            self.twitch_id = None
+            return
 
-        self.twitch_id = json.loads(response.text)["data"][0]["id"]
+        self.twitch_id = dataRes["data"][0]["id"]
 
     def set_is_streaming(self, is_streaming):
         if is_streaming:
