@@ -17,6 +17,7 @@ NOTIFICATION_DELAY = 60
 isConfigClientSecret = False
 isConfigClientId = False
 isAddingUser = False
+isNotifWorkerRunning = False
 
 telegram_whiteList = []
 
@@ -27,11 +28,25 @@ t = None
 commands = None
 
 
-def is_allowed(update):
+def configure_notif_workers():
+    global updater, isNotifWorkerRunning
+    if not t.is_client_id_set() or not t.is_client_secret_set() or isNotifWorkerRunning:
+        return
+    queue = updater.job_queue
+    queue.run_repeating(t.send_notfications,
+                        interval=NOTIFICATION_DELAY, first=0)
+    isNotifWorkerRunning = True
+    logger.info("Worker's notification is running")
+
+
+def is_allowed(update, context):
     '''Checks if the telegram's user is allowed to execute the command'''
     global telegram_whiteList
     user = update.effective_user.username.lower()
-    if user in (name.lower() for user in telegram_whiteList):
+    if not user.startswith("@"):
+        user = "@{0}".format(user)
+
+    if not user in (user.lower() for user in telegram_whiteList):
         context.bot.send_message(
             chat_id=update.effective_chat.id, text="Permissions required")
         return False
@@ -39,14 +54,25 @@ def is_allowed(update):
     return True
 
 
-def get_param_value(command, text):
+def reset_flags():
+    global isConfigClientId, isConfigClientSecret, isAddingUser
+    isAddingUser = False
+    isConfigClientId = False
+    isConfigClientSecret = False
+
+
+def get_param_value(update, command, text):
     '''returns a collection with the values after the command'''
     if not text.startswith(command):
         return None
-    text = text.replace(command, "")
+
+    botName = update.effective_user.bot.username.lower()
+
+    text = text.lower().replace(command.lower(), "").replace(
+        botName, "").replace("@", "", -1)
     text = text.strip()
     if text == "":
-        return None
+        return []
     return text.split(" ")
 
 
@@ -84,26 +110,54 @@ def start(update, context):
 
 
 def handle_twitch_client_id(update, context):
-    global isConfigClientId, isConfigClientSecret, isAddingUser
-    isConfigClientSecret = False
-    isAddingUser = False
-    isConfigClientId = True
-    context.bot.send_message(
-        chat_id=update.effective_chat.id, text="Please type the twitch Client ID:")
+    if not is_allowed(update, context):
+        return
+
+    global isConfigClientId
+    reset_flags()
+
+    clientIds = get_param_value(update, "/setclientid", update.message.text)
+
+    if len(clientIds) == 0:
+        isConfigClientId = True
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Please type the twitch Client ID:")
+    else:
+        clientId = clientIds[0]
+        t.set_client_id(clientId)
+        configure_notif_workers()
+
+        if check_missing_data(update, context):
+            return
+
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Client Id configured")
+        return
 
 
 def handle_twitch_client_secret(update, context):
-    if not is_allowed(update):
+    if not is_allowed(update, context):
         return
-    global isConfigClientId, isConfigClientSecret, isAddingUser
-    isConfigClientSecret = True
-    isAddingUser = False
-    isConfigClientId = False
+    global isConfigClientSecret
+    reset_flags()
 
-    users = get_param_value("/setclientid", update.message.text)
+    secrets = get_param_value(update, "/setsecretid", update.message.text)
 
-    context.bot.send_message(
-        chat_id=update.effective_chat.id, text="Please type the twitch Client secret:")
+    if len(secrets) == 0:
+        isConfigClientSecret = True
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Please type the twitch Client secret:")
+    else:
+        secret = secrets[0]
+        t.set_client_secret(secret)
+        configure_notif_workers()
+
+        if check_missing_data(update, context):
+            return
+
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Client secret configured")
+        return
 
 
 def generic_handle(update, context):
@@ -113,7 +167,7 @@ def generic_handle(update, context):
     if msgText.startswith("/") or msgText == "" or msgText is None:
         return
 
-    if isConfigClientId:
+    if isConfigClientId and is_allowed(update, context):
         isConfigClientId = False
         t.set_client_id(msgText)
 
@@ -124,7 +178,7 @@ def generic_handle(update, context):
             chat_id=update.effective_chat.id, text="Client Id configured")
         return
 
-    if isConfigClientSecret:
+    if isConfigClientSecret and is_allowed(update, context):
         isConfigClientSecret = False
         t.set_client_secret(msgText)
 
@@ -135,7 +189,7 @@ def generic_handle(update, context):
             chat_id=update.effective_chat.id, text="Client secret configured")
         return
 
-    if isAddingUser:
+    if isAddingUser and is_allowed(update, context):
         isAddingUser = False
         res = t.add_user(msgText, update.effective_chat.id,
                          update.effective_chat.type != 'private')
@@ -154,8 +208,7 @@ def generic_handle(update, context):
 
 
 def handle_cancel(update, context):
-    isConfigClientSecret = False
-    isConfigClientId = False
+    reset_flags()
     context.bot.send_message(
         chat_id=update.effective_chat.id, text="Done!, everything is canceled:")
 
@@ -168,10 +221,10 @@ def handle_error(update, context):
 def handle_help(update, context):
     global commands
     helpMsg = u"Available commands: \n\n"
-    for i, v in enumerate(commands):
-        if v["inHelp"]:
+    for command in commands:
+        if command["inHelp"]:
             helpMsg = helpMsg + \
-                u"- /{0}: {1}\n".format(v["command"], v["info"])
+                u"- /{0}: {1}\n".format(command["command"], command["info"])
 
     context.bot.send_message(
         chat_id=update.effective_chat.id, text=helpMsg)
@@ -182,8 +235,8 @@ def handle_twitch_add_user(update, context):
     isConfigClientSecret = False
     isConfigClientId = False
     isAddingUser = False
-    users = get_param_value("/adduser", update.message.text)
-    if len(user) == 0:
+    users = get_param_value(update, "/adduser", update.message.text)
+    if len(users) == 0:
         isAddingUser = True
         context.bot.send_message(
             chat_id=update.effective_chat.id, text="Type the username of User's twitch:")
@@ -198,11 +251,11 @@ def handle_twitch_add_user(update, context):
 
         isOrAre = "is" if len(users) == 1 else "are"
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Now I'll notify you in this chat when @{0} {1} streaming".format(", ".join(users), isOrAre))
+            chat_id=update.effective_chat.id, text="Now I'll notify you in this chat when @{0} {1} streaming".format(", @".join(users), isOrAre))
 
 
 def __init__():
-    global t, commands, telegram_whiteList
+    global t, commands, telegram_whiteList, updater
     t = Twitch()
     config = configparser.ConfigParser()
 
@@ -214,7 +267,6 @@ def __init__():
     logger.info("creating bot updater")
     updater = Updater(telegram_botToken, use_context=True)
     dp = updater.dispatcher
-    queue = updater.job_queue
 
     commands = [
         {
@@ -264,8 +316,7 @@ def __init__():
     dp.add_handler(MessageHandler(Filters.text, generic_handle))
 
     logger.info("configuring workers")
-    queue.run_repeating(t.send_notfications,
-                        interval=NOTIFICATION_DELAY, first=0)
+    configure_notif_workers()
 
     logger.info("starting polling")
     updater.start_polling()
