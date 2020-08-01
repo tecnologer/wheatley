@@ -172,12 +172,15 @@ class Twitch:
                 retval = context.bot.send_message(chat_id=user.chat_id, text='[{0}](https://twitch.tv/{0}) is live!! Streaming {1} with {2} viewers'.format(
                     userName, gameName, viewerCount), parse_mode='MarkDown')
 
-                if user.is_group:
-                    context.bot.pin_chat_message(
-                        chat_id=user.chat_id, message_id=retval.message_id)
-
                 user.set_is_streaming(True)
                 dao.save(PREFIX_DB, "users", self.users)
+
+                if user.is_group:
+                    try:
+                        context.bot.pin_chat_message(
+                            chat_id=user.chat_id, message_id=retval.message_id)
+                    except:
+                        continue
 
         for user in self.users:
             if user.username in streaming_users:
@@ -192,7 +195,10 @@ class Twitch:
                 chat_id=user.chat_id, text='{0} stream is not running :('.format(user.username))
 
             if user.is_group:
-                context.bot.unpin_chat_message(chat_id=user.chat_id)
+                try:
+                    context.bot.unpin_chat_message(chat_id=user.chat_id)
+                except:
+                    continue
 
     def get_users_by_username(self, username):
         users = []
