@@ -74,8 +74,8 @@ class Twitch:
         if usersDao is None:
             return
 
-        for i, user in enumerate(usersDao):
-            if not user["twitch_id"] in unique_users_collection:
+        for user in usersDao:
+            if not user["twitch_id"] is None and not user["twitch_id"] in unique_users_collection:
                 unique_users_collection.append(user["twitch_id"])
 
             self.users.append(UserTwitch(
@@ -108,7 +108,7 @@ class Twitch:
 
         newUser = UserTwitch(user, chat_id, is_group)
 
-        if not newUser.twitch_id in unique_users_collection:
+        if not newUser.twitch_id is None and not newUser.twitch_id in unique_users_collection:
             unique_users_collection.append(newUser.twitch_id)
 
         self.users.append(newUser)
