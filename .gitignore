@@ -1,3 +1,5 @@
 __pycache__/
+.vscode/
+
 bot_doc.ini
 twitch_bot.json
