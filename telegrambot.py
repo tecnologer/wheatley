@@ -20,6 +20,7 @@ isAddingUser = False
 isNotifWorkerRunning = False
 
 telegram_whiteList = []
+telegram_masterchat = 0
 
 telegram_botToken = ""
 updater = None
@@ -111,6 +112,9 @@ def check_missing_data(update, context):
 
 
 def start(update, context):
+    if not is_allowed(update, context):
+        notify_to_master(update, context, "start")
+        return
     context.bot.send_message(
         chat_id=update.effective_chat.id, text="Hello, I'll assist you to configure everything")
 
@@ -123,6 +127,7 @@ def start(update, context):
 
 def handle_twitch_client_id(update, context):
     if not is_allowed(update, context):
+        notify_to_master(update, context, "setclientid")
         return
 
     global isConfigClientId
@@ -149,6 +154,7 @@ def handle_twitch_client_id(update, context):
 
 def handle_twitch_client_secret(update, context):
     if not is_allowed(update, context):
+        notify_to_master(update, context, "setsecretid")
         return
     global isConfigClientSecret
     reset_flags()
@@ -206,6 +212,8 @@ def generic_handle(update, context):
         res = t.add_user(msgText, update.effective_chat.id,
                          update.effective_chat.type != 'private')
 
+        notify_to_master(update, context, "adduser", msgText)
+
         if res is not None:
             context.bot.send_message(
                 chat_id=update.effective_chat.id, text=res)
@@ -243,11 +251,11 @@ def handle_help(update, context):
 
 
 def handle_twitch_add_user(update, context):
-    global isConfigClientId, isConfigClientSecret, isAddingUser
+    global isConfigClientId, isConfigClientSecret, isAddingUser, telegram_masterchat
     isConfigClientSecret = False
     isConfigClientId = False
     isAddingUser = False
-    users = get_param_value(update, "/adduser", update.message.text)
+    users = get_param_value(update, "/adduser")
     if len(users) == 0:
         isAddingUser = True
         context.bot.send_message(
@@ -265,6 +273,8 @@ def handle_twitch_add_user(update, context):
         context.bot.send_message(
             chat_id=update.effective_chat.id, text="Now I'll notify you in this chat when @{0} {1} streaming".format(", @".join(users), isOrAre))
 
+        notify_to_master(update, context, "adduser", users)
+
 
 def handle_add_admin(update, context):
     if not is_allowed(update, context):
@@ -275,22 +285,103 @@ def handle_add_admin(update, context):
         context.bot.send_message(
             chat_id=update.effective_chat.id, text="The name of admin(s) is required. use: /addadmin <telegram_username>")
 
+    new_added = []
     for admin in admins:
         if not admin.startswith("@"):
             admin = "@{0}".format(admin)
-        telegram_whiteList.append(admin)
 
-    updateData("telegram_whiteList", telegram_whiteList)
+        if admin in (user.lower() for user in telegram_whiteList):
+            continue
+        telegram_whiteList.append(admin)
+        new_added.append(admin)
+
+    if len(new_added) > 0:
+        updateData("telegram_whiteList", telegram_whiteList)
+        notify_to_master(update, context, "addadmin", new_added)
+
+
+def handle_remove_admin(update, context):
+    if not is_allowed(update, context):
+        return
+
+    admins = get_param_value(update, "/removeadmin")
+    if len(admins) == 0:
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text="The name of admin(s) is required. use: /removeadmin <telegram_username>")
+
+    admin_removed = []
+    for admin in admins:
+        if not admin.startswith("@"):
+            admin = "@{0}".format(admin)
+
+        if not admin in (user.lower() for user in telegram_whiteList):
+            continue
+        telegram_whiteList.remove(admin)
+        admin_removed.append(admin)
+
+    if len(admin_removed) > 0:
+        updateData("telegram_whiteList", telegram_whiteList)
+        notify_to_master(update, context, "addadmin", admin_removed)
+
+
+def handle_set_chat_master(update, context):
+    if not is_allowed(update, context):
+        return
+    global telegram_masterchat
+
+    if telegram_masterchat == update.effective_chat.id:
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Noting to chance")
+        return
+
+    msg = "Now I'll notify you here if any weird happens"
+    try:
+        updateData("telegram_masterchat", telegram_masterchat)
+        notify_to_master(update, context, "setmasterchat")
+        telegram_masterchat = update.effective_chat.id
+    except:
+        msg = "an exception occurred"
+
+    context.bot.send_message(
+        chat_id=update.effective_chat.id, text=msg)
+
+
+def notify_to_master(update, context, cmd, value=None):
+    global telegram_masterchat
+    msg = "paso algo, pero no se que"
+    author = update.effective_user.username
+    if not value is None:
+        value = str(value)
+
+    if cmd == "start":
+        msg = "{0} tried to start me".format(author)
+    elif cmd == "setclientid":
+        msg = "{0} tried to set the client id".format(author)
+    elif cmd == "setsecretid":
+        msg = "{0} tried to set the client secret".format(author)
+    elif cmd == "adduser":
+        msg = "{0} added the user {1} to {2}({3}) with name {4}".format(
+            author, value, update.effective_chat.type, update.effective_chat.id, update.effective_chat.name)
+    elif cmd == "addadmin":
+        msg = "{0} added {1} as new admin".format(
+            author, value)
+    elif cmd == "setmasterchat":
+        msg = "{0} changed the master chat to {1}({2}) named {3}".format(
+            author, update.effective_chat.type, update.effective_chat.id, update.effective_chat.name)
+
+    context.bot.send_message(
+        chat_id=telegram_masterchat, text=msg)
 
 
 def __init__():
-    global t, commands, telegram_whiteList, updater
+    global t, commands, telegram_whiteList, telegram_masterchat, updater
     t = Twitch()
     config = configparser.ConfigParser()
 
     logger.info("reading bot configuration")
     config.read(DATA_FILE_PATH)
     telegram_botToken = config.get("telegram", "botToken")
+    telegram_masterchat = int(config.get("telegram", "masterchat"))
     telegram_whiteList = eval(config.get("telegram", "whiteList"))
 
     logger.info("creating bot updater")
@@ -338,7 +429,19 @@ def __init__():
             "command": "addadmin",
             "handle": handle_add_admin,
             "info": "Adds a new telegram's user to whitelist (permissions). Use users separated by space to add multiple.",
-            "inHelp": True
+            "inHelp": False
+        },
+        {
+            "command": "removeadmin",
+            "handle": handle_remove_admin,
+            "info": "Removes a telegram's user from whitelist (permissions). Use users separated by space to add multiple.",
+            "inHelp": False
+        },
+        {
+            "command": "setmasterchat",
+            "handle": handle_set_chat_master,
+            "info": "Marks this chat as master to recive notifications (debugging purpose).",
+            "inHelp": False
         }
     ]
 
