@@ -28,6 +28,17 @@ t = None
 commands = None
 
 
+def updateData(key, value):
+    global DATA_FILE_PATH
+    key = key.split("_")
+    config = configparser.ConfigParser()
+    config.read(DATA_FILE_PATH)
+    cfgfile = open(DATA_FILE_PATH, 'w')
+    config.set(key[0], key[1], str(value))
+    config.write(cfgfile)
+    cfgfile.close()
+
+
 def configure_notif_workers():
     global updater, isNotifWorkerRunning
     if not t.is_client_id_set() or not t.is_client_secret_set() or isNotifWorkerRunning:
@@ -61,10 +72,11 @@ def reset_flags():
     isConfigClientSecret = False
 
 
-def get_param_value(update, command, text):
+def get_param_value(update, command):
     '''returns a collection with the values after the command'''
+    text = update.message.text
     if not text.startswith(command):
-        return None
+        return []
 
     botName = update.effective_user.bot.username.lower()
 
@@ -116,7 +128,7 @@ def handle_twitch_client_id(update, context):
     global isConfigClientId
     reset_flags()
 
-    clientIds = get_param_value(update, "/setclientid", update.message.text)
+    clientIds = get_param_value(update, "/setclientid")
 
     if len(clientIds) == 0:
         isConfigClientId = True
@@ -254,6 +266,23 @@ def handle_twitch_add_user(update, context):
             chat_id=update.effective_chat.id, text="Now I'll notify you in this chat when @{0} {1} streaming".format(", @".join(users), isOrAre))
 
 
+def handle_add_admin(update, context):
+    if not is_allowed(update, context):
+        return
+
+    admins = get_param_value(update, "/addadmin")
+    if len(admins) == 0:
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text="The name of admin(s) is required. use: /addadmin <telegram_username>")
+
+    for admin in admins:
+        if not admin.startswith("@"):
+            admin = "@{0}".format(admin)
+        telegram_whiteList.append(admin)
+
+    updateData("telegram_whiteList", telegram_whiteList)
+
+
 def __init__():
     global t, commands, telegram_whiteList, updater
     t = Twitch()
@@ -262,7 +291,7 @@ def __init__():
     logger.info("reading bot configuration")
     config.read(DATA_FILE_PATH)
     telegram_botToken = config.get("telegram", "botToken")
-    telegram_whiteList = config.get("telegram", "whiteList").split(",")
+    telegram_whiteList = eval(config.get("telegram", "whiteList"))
 
     logger.info("creating bot updater")
     updater = Updater(telegram_botToken, use_context=True)
@@ -303,6 +332,12 @@ def __init__():
             "command": "adduser",
             "handle": handle_twitch_add_user,
             "info": "Adds a new user(s) to the list to monitor its stream status. Use users separated by space to add multiple.",
+            "inHelp": True
+        },
+        {
+            "command": "addadmin",
+            "handle": handle_add_admin,
+            "info": "Adds a new telegram's user to whitelist (permissions). Use users separated by space to add multiple.",
             "inHelp": True
         }
     ]
