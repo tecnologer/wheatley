@@ -17,6 +17,7 @@ NOTIFICATION_DELAY = 60
 isConfigClientSecret = False
 isConfigClientId = False
 isAddingUser = False
+isRemovingUser = False
 isNotifWorkerRunning = False
 
 telegram_whiteList = []
@@ -54,6 +55,10 @@ def configure_notif_workers():
 def is_allowed(update, context):
     '''Checks if the telegram's user is allowed to execute the command'''
     global telegram_whiteList
+    if update.effective_user.username is None:
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Permissions required")
+        return False
     user = update.effective_user.username.lower()
     if not user.startswith("@"):
         user = "@{0}".format(user)
@@ -67,10 +72,11 @@ def is_allowed(update, context):
 
 
 def reset_flags():
-    global isConfigClientId, isConfigClientSecret, isAddingUser
+    global isConfigClientId, isConfigClientSecret, isAddingUser, isRemovingUser
     isAddingUser = False
     isConfigClientId = False
     isConfigClientSecret = False
+    isRemovingUser = False
 
 
 def get_param_value(update, command):
@@ -179,9 +185,10 @@ def handle_twitch_client_secret(update, context):
 
 
 def generic_handle(update, context):
-    global isConfigClientId, isConfigClientSecret, isAddingUser
+    global isConfigClientId, isConfigClientSecret, isAddingUser, isRemovingUser
 
     msgText = update.message.text
+
     if msgText.startswith("/") or msgText == "" or msgText is None:
         return
 
@@ -207,7 +214,7 @@ def generic_handle(update, context):
             chat_id=update.effective_chat.id, text="Client secret configured")
         return
 
-    if isAddingUser and is_allowed(update, context):
+    if isAddingUser:
         isAddingUser = False
         res = t.add_user(msgText, update.effective_chat.id,
                          update.effective_chat.type != 'private')
@@ -224,6 +231,19 @@ def generic_handle(update, context):
 
         context.bot.send_message(
             chat_id=update.effective_chat.id, text="Now I'll notify you in this chat when @{0} is streaming".format(msgText))
+        return
+
+    if isRemovingUser:
+        isRemovingUser = False
+        res = t.remove_user(msgText, update.effective_chat.id)
+
+        notify_to_master(update, context, "removeuser", msgText)
+
+        msg = "The notifications for @{0} are of".format(
+            ", @".join(removed_users)) if res is not None else "Users not configured"
+
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text=msg)
         return
 
 
@@ -276,6 +296,30 @@ def handle_twitch_add_user(update, context):
         notify_to_master(update, context, "adduser", users)
 
 
+def handle_twitch_remove_user(update, context):
+    global isConfigClientId, isConfigClientSecret, isAddingUser, isRemovingUser, telegram_masterchat
+    isConfigClientSecret = False
+    isConfigClientId = False
+    isAddingUser = False
+    users = get_param_value(update, "/removeuser")
+    if len(users) == 0:
+        isRemovingUser = True
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Type the username of User's twitch:")
+    else:
+        removed_users = []
+        for user in users:
+            res = t.remove_user(user, update.effective_chat.id)
+            if not res is None:
+                removed_users.append(user)
+        msg = "The notifications for @{0} are off".format(
+            ", @".join(removed_users)) if len(removed_users) > 0 else "Users not configured"
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text=msg)
+
+        notify_to_master(update, context, "removeuser", users)
+
+
 def handle_add_admin(update, context):
     if not is_allowed(update, context):
         return
@@ -297,6 +341,8 @@ def handle_add_admin(update, context):
 
     if len(new_added) > 0:
         updateData("telegram_whiteList", telegram_whiteList)
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text="{0} are admin 😉".format(", ".join(new_added)))
         notify_to_master(update, context, "addadmin", new_added)
 
 
@@ -321,7 +367,9 @@ def handle_remove_admin(update, context):
 
     if len(admin_removed) > 0:
         updateData("telegram_whiteList", telegram_whiteList)
-        notify_to_master(update, context, "addadmin", admin_removed)
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text="{0} are no longer admin 😢".format(", ".join(admin_removed)))
+        notify_to_master(update, context, "removeadmin", admin_removed)
 
 
 def handle_set_chat_master(update, context):
@@ -360,14 +408,20 @@ def notify_to_master(update, context, cmd, value=None):
     elif cmd == "setsecretid":
         msg = "{0} tried to set the client secret".format(author)
     elif cmd == "adduser":
-        msg = "{0} added the user {1} to {2}({3}) with name {4}".format(
-            author, value, update.effective_chat.type, update.effective_chat.id, update.effective_chat.name)
+        msg = '{0} added the user {1} to {2}({3}) with name "{4}"'.format(
+            author, value, update.effective_chat.type, update.effective_chat.id, update.effective_chat.title)
     elif cmd == "addadmin":
         msg = "{0} added {1} as new admin".format(
             author, value)
     elif cmd == "setmasterchat":
-        msg = "{0} changed the master chat to {1}({2}) named {3}".format(
-            author, update.effective_chat.type, update.effective_chat.id, update.effective_chat.name)
+        msg = '{0} changed the master chat to {1}({2}) named "{3}"'.format(
+            author, update.effective_chat.type, update.effective_chat.id, update.effective_chat.title)
+    elif cmd == "removeuser":
+        msg = '{0} removed the user {1} from {2}({3}) with name "{4}"'.format(
+            author, value, update.effective_chat.type, update.effective_chat.id, update.effective_chat.title)
+    elif cmd == "removeadmin":
+        msg = "{0} removed {1} as admin".format(
+            author, value)
 
     context.bot.send_message(
         chat_id=telegram_masterchat, text=msg)
@@ -423,6 +477,12 @@ def __init__():
             "command": "adduser",
             "handle": handle_twitch_add_user,
             "info": "Adds a new user(s) to the list to monitor its stream status. Use users separated by space to add multiple.",
+            "inHelp": True
+        },
+        {
+            "command": "removeuser",
+            "handle": handle_twitch_remove_user,
+            "info": "Removes a user(s) from the list to monitor its stream status. Use users separated by space to add multiple.",
             "inHelp": True
         },
         {
