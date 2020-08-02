@@ -114,6 +114,20 @@ class Twitch:
         self.users.append(newUser)
         dao.save(PREFIX_DB, "users", self.users)
 
+    def remove_user(self, username, chat_id):
+        user_to_remove = None
+        for user in self.users:
+            if user.username == username and user.chat_id == chat_id:
+                user_to_remove = user
+                break
+
+        if user_to_remove is None:
+            return None
+
+        self.users.remove(user_to_remove)
+        dao.save(PREFIX_DB, "users", self.users)
+        return user_to_remove
+
     def need_token_renew(self):
         return self.remaining_token_expiration() < 10
 
