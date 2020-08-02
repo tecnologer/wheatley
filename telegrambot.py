@@ -287,19 +287,22 @@ def handle_twitch_add_user(update, context):
         context.bot.send_message(
             chat_id=update.effective_chat.id, text="Type the username of User's twitch:")
     else:
+        added_users = []
         for user in users:
             res = t.add_user(user, update.effective_chat.id,
                              update.effective_chat.type != update.effective_chat.PRIVATE)
             if res is not None:
                 context.bot.send_message(
                     chat_id=update.effective_chat.id, text=res)
-                return
+            else:
+                added_users.append(user)
 
-        isOrAre = "is" if len(users) == 1 else "are"
-        context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Now I'll notify you in this chat when @{0} {1} streaming".format(", @".join(users), isOrAre))
+        if len(added_users) > 1:
+            isOrAre = "is" if len(users) == 1 else "are"
+            context.bot.send_message(
+                chat_id=update.effective_chat.id, text="Now I'll notify you in this chat when @{0} {1} streaming".format(", @".join(added_users), isOrAre))
 
-        notify_to_master(update, context, "adduser", users)
+            notify_to_master(update, context, "adduser", users)
 
 
 def handle_twitch_remove_user(update, context):
@@ -314,16 +317,21 @@ def handle_twitch_remove_user(update, context):
             chat_id=update.effective_chat.id, text="Type the username of User's twitch:")
     else:
         removed_users = []
+        invalid_users = []
         for user in users:
             res = t.remove_user(user, update.effective_chat.id)
             if not res is None:
                 removed_users.append(user)
+            else:
+                invalid_users.append(user)
+
         msg = "The notifications for @{0} are off".format(
-            ", @".join(removed_users)) if len(removed_users) > 0 else "Users not configured"
+            ", @".join(removed_users)) if len(removed_users) > 0 else "This users {0} are not configured".format(invalid_users)
         context.bot.send_message(
             chat_id=update.effective_chat.id, text=msg)
 
-        notify_to_master(update, context, "removeuser", users)
+        if len(removed_users) > 0:
+            notify_to_master(update, context, "removeuser", users)
 
 
 def handle_add_admin(update, context):
