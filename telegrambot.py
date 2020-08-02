@@ -396,6 +396,8 @@ def handle_set_chat_master(update, context):
 
 def notify_to_master(update, context, cmd, value=None):
     global telegram_masterchat
+    if telegram_masterchat == 0 or telegram_masterchat is None:
+        return
     msg = "paso algo, pero no se que"
     author = update.effective_user.username
     if not value is None:
