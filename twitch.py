@@ -9,7 +9,6 @@ from requests import get
 from userTwitch import UserTwitch
 
 PREFIX_DB = "twitch"
-unique_users_collection = []
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -30,6 +29,7 @@ class Twitch:
         self.token = dao.get(PREFIX_DB, "token")
         self.client_id = dao.get(PREFIX_DB, "client_id")
         self.client_secret = dao.get(PREFIX_DB, "client_secret")
+        self.unique_users_collection = []
 
         userTwitch.TOKEN = self.token
         userTwitch.CLIENT_ID = self.client_id
@@ -68,15 +68,14 @@ class Twitch:
         self.get_token()
 
     def load_users(self):
-        global unique_users_collection
         usersDao = dao.get(PREFIX_DB, "users")
         self.users = []
         if usersDao is None:
             return
 
         for user in usersDao:
-            if not user["twitch_id"] is None and not user["twitch_id"] in unique_users_collection:
-                unique_users_collection.append(user["twitch_id"])
+            if not user["twitch_id"] is None and not user["twitch_id"] in self.unique_users_collection:
+                self.unique_users_collection.append(user["twitch_id"])
 
             self.users.append(UserTwitch(
                 user["username"], user["chat_id"], user["is_group"], user["twitch_id"], user["last_stream"], user["is_streaming"]))
@@ -108,8 +107,8 @@ class Twitch:
 
         newUser = UserTwitch(user, chat_id, is_group)
 
-        if not newUser.twitch_id is None and not newUser.twitch_id in unique_users_collection:
-            unique_users_collection.append(newUser.twitch_id)
+        if not newUser.twitch_id is None and not newUser.twitch_id in self.unique_users_collection:
+            self.unique_users_collection.append(newUser.twitch_id)
 
         self.users.append(newUser)
         dao.save(PREFIX_DB, "users", self.users)
@@ -139,14 +138,13 @@ class Twitch:
             self.remaining_token_expiration(), self.get_token).start()
 
     def send_notfications(self, context):
-        global unique_users_collection
         headers = {
             "client-id": self.client_id,
             "Authorization": "Bearer {0}".format(self.token["access_token"])
         }
 
         query_params = ""
-        for twitch_id in unique_users_collection:
+        for twitch_id in self.unique_users_collection:
             query_params = "{0}&user_id={1}".format(
                 query_params, twitch_id)
 
