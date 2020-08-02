@@ -75,6 +75,6 @@ class UserTwitch:
         if self.last_stream is None or self.last_stream == 0:
             return True
 
-        last_stream = datetime.fromtimestamp(self.last_stream)
+        last_stream = datetime.utcfromtimestamp(self.last_stream)
         delta = datetime.utcnow() - last_stream
         return delta.seconds > NOTIF_DELAY
