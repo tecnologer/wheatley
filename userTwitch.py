@@ -67,7 +67,7 @@ class UserTwitch:
 
     def set_is_streaming(self, is_streaming):
         if is_streaming:
-            self.last_stream = datetime.utcnow().timestamp()
+            self.last_stream = time.time()
 
         self.is_streaming = is_streaming
 
@@ -75,6 +75,5 @@ class UserTwitch:
         if self.last_stream is None or self.last_stream == 0:
             return True
 
-        last_stream = datetime.utcfromtimestamp(self.last_stream)
-        delta = datetime.utcnow() - last_stream
-        return delta.seconds > NOTIF_DELAY
+        delta = time.time() - self.last_stream
+        return delta > NOTIF_DELAY
