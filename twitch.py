@@ -204,7 +204,7 @@ class Twitch:
             user.set_is_streaming(False)
             dao.save(PREFIX_DB, "users", self.users)
             context.bot.send_message(
-                chat_id=user.chat_id, text='{0} stream is not running :('.format(user.username))
+                chat_id=user.chat_id, text='{0} stream is not running 😞'.format(user.username))
 
             if user.is_group:
                 try:
@@ -219,3 +219,11 @@ class Twitch:
                 users.append(user)
 
         return users
+
+    def get_users_by_chat(self, chat_id):
+        chat_users = []
+        for user in self.users:
+            if user.chat_id == chat_id:
+                chat_users.append(user)
+
+        return chat_users

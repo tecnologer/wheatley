@@ -443,6 +443,36 @@ def notify_to_master(update, context, cmd, value=None):
         chat_id=telegram_masterchat, text=msg)
 
 
+def handle_get_users(update, context):
+    chat_id = update.effective_chat.id
+    users = t.get_users_by_chat(chat_id)
+
+    if len(users) == 0:
+        context.bot.send_message(
+            chat_id=chat_id, text="There're not users twitch configured in this chat")
+        return
+
+    msg = "*The following users twitch are registered in this chat:*\n\n"
+    invalid_users = []
+    for user in users:
+        if user.twitch_id is None:
+            invalid_users.append(user)
+            continue
+        msg = "{0}• twitch.tv/{1}\n".format(msg, user.username)
+
+    if len(invalid_users) == len(users):
+        msg = "*The following users twitch are registered in this chat:*\n\n"
+
+    if len(invalid_users) > 0:
+        msg = "{0}\n*The following users twitch are invalid:*\n\n".format(msg)
+
+        for invalid in invalid_users:
+            msg = "{0}• {1}\n".format(msg, invalid.username)
+
+    context.bot.send_message(
+        chat_id=chat_id, text=msg, parse_mode='MarkDown')
+
+
 def __init__():
     global t, commands, telegram_whiteList, telegram_masterchat, updater
     t = Twitch()
@@ -518,6 +548,12 @@ def __init__():
             "handle": handle_set_chat_master,
             "info": "Marks this chat as master to recive notifications (debugging purpose).",
             "inHelp": False
+        },
+        {
+            "command": "getusers",
+            "handle": handle_get_users,
+            "info": "Returns the list of users twitch in the chat",
+            "inHelp": True
         }
     ]
 
