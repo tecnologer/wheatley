@@ -6,9 +6,9 @@ from datetime import datetime
 TOKEN = None
 CLIENT_ID = None
 '''
-Minimum of seconds to send again the notification
+Minimum of seconds to send again the notification, each 21600 secs = 6 hours
 '''
-NOTIF_DELAY = 24*60*60
+NOTIF_DELAY = 6*60*60
 
 
 class UserTwitch:
