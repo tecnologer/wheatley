@@ -276,6 +276,12 @@ def handle_twitch_add_user(update, context):
     isConfigClientId = False
     isAddingUser = False
     users = get_param_value(update, "/adduser")
+
+    if len(t.unique_users_collection) >= 100:
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text="The limit of users has been reached, please contact any of this administrators: {0}".format(", ".join(telegram_whiteList)))
+        return
+
     if len(users) == 0:
         isAddingUser = True
         context.bot.send_message(
