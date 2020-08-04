@@ -81,7 +81,8 @@ def reset_flags():
 
 def get_param_value(update, command):
     '''returns a collection with the values after the command'''
-    text = update.message.text
+
+    text = update.message.text if update.edited_message is None else update.edited_message.text
     if not text.startswith(command):
         return []
 
