@@ -474,7 +474,7 @@ def handle_get_users(update, context):
         chat_id=chat_id, text=msg, parse_mode='MarkDown')
 
 
-def __init__():
+def run():
     global t, commands, telegram_whiteList, telegram_masterchat, updater
     t = Twitch()
     config = configparser.ConfigParser()
