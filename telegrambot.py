@@ -297,7 +297,7 @@ def handle_twitch_add_user(update, context):
             else:
                 added_users.append(user)
 
-        if len(added_users) > 1:
+        if len(added_users) > 0:
             isOrAre = "is" if len(users) == 1 else "are"
             context.bot.send_message(
                 chat_id=update.effective_chat.id, text="Now I'll notify you in this chat when @{0} {1} streaming".format(", @".join(added_users), isOrAre))
@@ -325,7 +325,7 @@ def handle_twitch_remove_user(update, context):
             else:
                 invalid_users.append(user)
 
-        msg = "The notifications for @{0} are off".format(
+        msg = "The notifications for @{0} are turned off".format(
             ", @".join(removed_users)) if len(removed_users) > 0 else "This users {0} are not configured".format(invalid_users)
         context.bot.send_message(
             chat_id=update.effective_chat.id, text=msg)
