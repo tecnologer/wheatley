@@ -1,4 +1,4 @@
 import telegrambot
 
 if __name__ == '__main__':
-    telegrambot.__init__()
+    telegrambot.run()
