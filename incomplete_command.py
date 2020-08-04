@@ -9,28 +9,33 @@ class IncompleteCommands:
 
     def add(self, update, command):
         author = self.get_author(update)
-        if author in self.commands:
-            return "Please complete {0} first or user /cancel".format(self.__commands[author])
+        self.__cancel_other_commands(author)
 
-        self.commands[author] = command
+        self.__commands[author] = command
         return None
 
-    def mark_completed(self, update, command):
+    def mark_completed(self, update):
         author = self.get_author(update)
-        if author in self.commands:
-            return "Nothing pending"
-        del self.commands[author]
-        return None
+        self.__cancel_other_commands(author)
 
     def get_author(self, update):
         userid = update.effective_user.id
         chatid = update.effective_chat.id
-        author = b"{0}-{1}".format(userid, chatid)
+        author = "{0}-{1}".format(userid, chatid)
         return hashlib.md5(str.encode(author)).hexdigest()
 
     def user_has_incomplete_command(self, update):
         author = self.get_author(update)
         return author in self.__commands
 
+    def is_incomplete(self, update, command):
+        author = self.get_author(update)
+        return author in self.__commands and command == self.__commands[author]
+
     def clear(self):
         self.__commands = {}
+
+    def __cancel_other_commands(self, author):
+        if not author in self.__commands:
+            return
+        del self.__commands[author]
