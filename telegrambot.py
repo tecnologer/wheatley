@@ -398,9 +398,9 @@ def handle_set_chat_master(update, context):
 
     msg = "Now I'll notify you here if any weird happens"
     try:
-        updateData("telegram_masterchat", telegram_masterchat)
         notify_to_master(update, context, "setmasterchat")
         telegram_masterchat = update.effective_chat.id
+        updateData("telegram_masterchat", telegram_masterchat)
     except:
         msg = "an exception occurred"
 
@@ -410,7 +410,7 @@ def handle_set_chat_master(update, context):
 
 def notify_to_master(update, context, cmd, value=None):
     global telegram_masterchat
-    if telegram_masterchat == 0 or telegram_masterchat is None:
+    if telegram_masterchat == 0 or telegram_masterchat is None or telegram_masterchat == update.effective_chat.id:
         return
     msg = "paso algo, pero no se que"
     author = update.effective_user.username
