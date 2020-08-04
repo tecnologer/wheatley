@@ -449,7 +449,7 @@ def handle_get_users(update, context):
 
     if len(users) == 0:
         context.bot.send_message(
-            chat_id=chat_id, text="There're not users twitch configured in this chat")
+            chat_id=chat_id, text="There are not users twitch configured in this chat")
         return
 
     msg = "*The following users twitch are registered in this chat:*\n\n"
