@@ -12,7 +12,8 @@ class Commands:
     # users
     add_user = "adduser"
     remove_user = "removeuser"
-    get_users = "getusers",
+    get_users = "getusers"
+    stream_status = "streamstatus"
 
     # admins
     add_admin = "addadmin"
