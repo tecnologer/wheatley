@@ -4,6 +4,9 @@ import threading
 import time
 import logging
 import userTwitch
+import games
+import stream
+import sys
 from requests import post
 from requests import get
 from userTwitch import UserTwitch
@@ -11,7 +14,7 @@ from userTwitch import UserTwitch
 PREFIX_DB = "twitch"
 
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+logging.basicConfig(filename='ouput.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
@@ -138,51 +141,22 @@ class Twitch:
             self.remaining_token_expiration(), self.get_token).start()
 
     def send_notfications(self, context):
-        headers = {
-            "client-id": self.client_id,
-            "Authorization": "Bearer {0}".format(self.token["access_token"])
-        }
-
-        query_params = ""
-        for twitch_id in self.unique_users_collection:
-            query_params = "{0}&user_id={1}".format(
-                query_params, twitch_id)
-
-        url = 'https://api.twitch.tv/helix/streams?{0}'.format(
-            query_params)
-        response = get(
-            url, headers=headers)
-
-        if response.status_code != 200:
-            logger.warning(response.text)
-            return  # set master chat to recive log errors
-
-        data = json.loads(response.text)
-        if not "data" in data:
-            logger.warning(response.text)
-            return
-
+        logger.info("send_notfications")
+        streams = self.get_stream_info(*self.unique_users_collection)
         streaming_users = []
-        for twitch_data in data["data"]:
-            userName = twitch_data['user_name']
-            streaming_users.append(userName.lower())
-            streamTitle = twitch_data['title']
-            viewerCount = twitch_data['viewer_count']
-            gameID = twitch_data['game_id']
-            startedAt = twitch_data['started_at']
-
-            response = get(
-                'https://api.twitch.tv/helix/games?id={0}'.format(gameID), headers=headers)
-            data = json.loads(response.text)
-            gameName = data['data'][0]['name']
-
-            users = self.get_users_by_username(userName)
+        for nstream in streams:
+            streaming_users.append(nstream.user_name)
+            users = self.get_users_by_username(nstream.user_name)
             for user in users:
                 if not user.requires_notif():
                     continue
 
-                retval = context.bot.send_message(chat_id=user.chat_id, text='[{0}](https://twitch.tv/{0}) is live!! Streaming {1} with {2} viewers'.format(
-                    userName, gameName, viewerCount), parse_mode='MarkDown')
+                msg = '[{0}](https://twitch.tv/{0}) is live!! Streaming {1} with {2} viewers'.format(
+                    nstream.user_name, nstream.game_name, nstream.viewer_count)
+                retval = context.bot.send_message(
+                    chat_id=user.chat_id, text=msg, parse_mode='MarkDown')
+
+                logger.info(msg + "; Chat: " + str(chat_id))
 
                 user.set_is_streaming(True)
                 dao.save(PREFIX_DB, "users", self.users)
@@ -203,9 +177,10 @@ class Twitch:
 
             user.set_is_streaming(False)
             dao.save(PREFIX_DB, "users", self.users)
+            msg = '{0} stream is not running 😞'.format(user.username)
             context.bot.send_message(
-                chat_id=user.chat_id, text='{0} stream is not running 😞'.format(user.username))
-
+                chat_id=user.chat_id, text=msg)
+            logger.info(msg + "; Chat: " + str(chat_id))
             if user.is_group:
                 try:
                     context.bot.unpin_chat_message(chat_id=user.chat_id)
@@ -227,3 +202,96 @@ class Twitch:
                 chat_users.append(user)
 
         return chat_users
+
+    def get_stream_info(self, *twitch_ids):
+        headers = {
+            "client-id": self.client_id,
+            "Authorization": "Bearer {0}".format(self.token["access_token"])
+        }
+
+        query_params = ""
+        for twitch_id in twitch_ids:
+            query_params = "{0}&user_id={1}".format(
+                query_params, twitch_id)
+
+        url = 'https://api.twitch.tv/helix/streams?{0}'.format(
+            query_params)
+        logger.info(url)
+        response = get(
+            url, headers=headers)
+
+        if response.status_code != 200:
+            logger.warning(response.text)
+            return []  # set master chat to recive log errors
+
+        data = json.loads(response.text)
+        if not "data" in data:
+            logger.warning(response.text)
+            return []
+
+        streams = []
+        for twitch_data in data["data"]:
+            new_stream = stream.get_from_response(twitch_data)
+
+            if new_stream.game_name is None:
+                url = 'https://api.twitch.tv/helix/games?id={0}'.format(
+                    new_stream.game_id)
+                response = get(url, headers=headers)
+                logger.info(url)
+                if response.status_code != 200:
+                    logger.warning(
+                        "Error getting game's name from response", response.text)
+                    new_stream.game_name = "Unknown"
+                else:
+                    try:
+                        data = json.loads(response.text)
+                        new_stream.game_name = data['data'][0]['name']
+                        games.add_game(new_stream.game_id,
+                                       new_stream.game_name)
+                    except:
+                        logger.warning(
+                            "Error getting the game's name", sys.exc_info()[0])
+                        new_stream.game_name = "Unknown"
+
+            streams.append(new_stream)
+
+        return streams
+
+    def get_stream_status(self, update, context, *twitch_users):
+        logger.info("get_stream_status")
+        chat_id = update.effective_chat.id
+        users = []
+        twitch_ids = []
+        for twitch_user in twitch_users:
+            for user in self.users:
+                if user.chat_id == chat_id and user.username == twitch_user.lower():
+                    users.append(user)
+                    twitch_ids.append(user.twitch_id)
+                    break
+
+        streams = self.get_stream_info(*twitch_ids)
+
+        streaming_users = []
+        for nstream in streams:
+            streaming_users.append(nstream.user_name)
+            msg = '[{0}](https://twitch.tv/{0}) is live!! Streaming {1} with {2} viewers'.format(
+                nstream.user_name, nstream.game_name, nstream.viewer_count)
+            context.bot.send_message(
+                chat_id=chat_id, text=msg, parse_mode='MarkDown')
+
+            logger.info(msg + "; Chat: " + str(chat_id))
+
+            user.set_is_streaming(True)
+            dao.save(PREFIX_DB, "users", self.users)
+
+        for user in users:
+            if user.username in streaming_users:
+                continue
+
+            user.set_is_streaming(False)
+            dao.save(PREFIX_DB, "users", self.users)
+            msg = '{0} stream is not running 😞'.format(user.username)
+            context.bot.send_message(
+                chat_id=chat_id, text=msg)
+
+            logger.info(msg + "; Chat: " + str(chat_id))
