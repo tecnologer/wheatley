@@ -1,12 +1,13 @@
 import configparser
 import logging
+import sys
 from twitch import Twitch
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from commands import Commands
 from incomplete_command import IncompleteCommands
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+logging.basicConfig(filename='ouput.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
@@ -230,7 +231,7 @@ def generic_handle(update, context):
 
 
 def handle_cancel(update, context):
-    incopleteCmd.clear()
+    incopleteCmd.mark_completed(update)
     context.bot.send_message(
         chat_id=update.effective_chat.id, text="Done!, everything is canceled:")
 
@@ -242,6 +243,8 @@ def handle_error(update, context):
 
 def handle_help(update, context):
     global commandsList
+    logger.info("/{0}".format(commands.help))
+
     helpMsg = u"Available commands: \n\n"
     for command in commandsList:
         if command["inHelp"]:
@@ -254,32 +257,36 @@ def handle_help(update, context):
 
 def handle_twitch_add_user(update, context):
     users = get_param_value(update, commands.add_user)
+    chat_id = update.effective_chat.id
+
+    logger.info(
+        "/{0} {1} in chat {2}".format(commands.add_user, " ".join(users), chat_id))
 
     incopleteCmd.mark_completed(update)
     if len(t.unique_users_collection) >= 100:
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="The limit of users has been reached, please contact any of this administrators: {0}".format(", ".join(telegram_whiteList)))
+            chat_id=chat_id, text="The limit of users has been reached, please contact any of this administrators: {0}".format(", ".join(telegram_whiteList)))
         return
 
     if len(users) == 0:
         incopleteCmd.add(update, commands.add_user)
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Type the username of User's twitch:")
+            chat_id=chat_id, text="Type the username of User's twitch:")
     else:
         added_users = []
         for user in users:
-            res = t.add_user(user, update.effective_chat.id,
+            res = t.add_user(user, chat_id,
                              update.effective_chat.type != update.effective_chat.PRIVATE)
             if res is not None:
                 context.bot.send_message(
-                    chat_id=update.effective_chat.id, text=res)
+                    chat_id=chat_id, text=res)
             else:
                 added_users.append(user)
 
         if len(added_users) > 0:
             isOrAre = "is" if len(users) == 1 else "are"
             context.bot.send_message(
-                chat_id=update.effective_chat.id, text="Now I'll notify you in this chat when @{0} {1} streaming".format(", @".join(added_users), isOrAre))
+                chat_id=chat_id, text="Now I'll notify you in this chat when @{0} {1} streaming".format(", @".join(added_users), isOrAre))
 
             notify_to_master(update, context, commands.add_user, users)
 
@@ -287,15 +294,19 @@ def handle_twitch_add_user(update, context):
 def handle_twitch_remove_user(update, context):
     incopleteCmd.mark_completed(update)
     users = get_param_value(update, commands.remove_user)
+    chat_id = update.effective_chat.id
+    logger.info(
+        "/{0} {1} in chat: {2}".format(commands.remove_user, " ".join(users), chat_id))
+
     if len(users) == 0:
         incopleteCmd.add(update, commands.remove_user)
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Type the username of User's twitch:")
+            chat_id=chat_id, text="Type the username of User's twitch:")
     else:
         removed_users = []
         invalid_users = []
         for user in users:
-            res = t.remove_user(user, update.effective_chat.id)
+            res = t.remove_user(user, chat_id)
             if not res is None:
                 removed_users.append(user)
             else:
@@ -304,7 +315,7 @@ def handle_twitch_remove_user(update, context):
         msg = "The notifications for @{0} are turned off".format(
             ", @".join(removed_users)) if len(removed_users) > 0 else "This users {0} are not configured".format(invalid_users)
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text=msg)
+            chat_id=chat_id, text=msg)
 
         if len(removed_users) > 0:
             notify_to_master(update, context, commands.remove_user, users)
@@ -315,9 +326,13 @@ def handle_add_admin(update, context):
         return
 
     admins = get_param_value(update, commands.add_admin)
+    chat_id = update.effective_chat.id
+    logger.info(
+        "/{0} {1} in chat: {2}".format(commands.add_admin, " ".join(admins), chat_id))
+
     if len(admins) == 0:
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="The name of admin(s) is required. use: /addadmin <telegram_username>")
+            chat_id=chat_id, text="The name of admin(s) is required. use: /addadmin <telegram_username>")
 
     new_added = []
     for admin in admins:
@@ -332,7 +347,7 @@ def handle_add_admin(update, context):
     if len(new_added) > 0:
         updateData("telegram_whiteList", telegram_whiteList)
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="{0} is admin 😉".format(", ".join(new_added)))
+            chat_id=chat_id, text="{0} is admin 😉".format(", ".join(new_added)))
         notify_to_master(update, context, commands.add_admin, new_added)
 
 
@@ -341,9 +356,13 @@ def handle_remove_admin(update, context):
         return
 
     admins = get_param_value(update, commands.remove_admin)
+
+    chat_id = update.effective_chat.id
+    logger.info(
+        "/{0} {1} in chat: {2}".format(commands.add_admin, " ".join(admins), chat_id))
     if len(admins) == 0:
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="The name of admin(s) is required. use: /removeadmin <telegram_username>")
+            chat_id=chat_id, text="The name of admin(s) is required. use: /removeadmin <telegram_username>")
 
     admin_removed = []
     for admin in admins:
@@ -358,7 +377,7 @@ def handle_remove_admin(update, context):
     if len(admin_removed) > 0:
         updateData("telegram_whiteList", telegram_whiteList)
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="{0} are no longer admin 😢".format(", ".join(admin_removed)))
+            chat_id=chat_id, text="{0} are no longer admin 😢".format(", ".join(admin_removed)))
         notify_to_master(update, context, commands.remove_admin, admin_removed)
 
 
@@ -434,6 +453,9 @@ def handle_get_users(update, context):
     chat_id = update.effective_chat.id
     users = t.get_users_by_chat(chat_id)
 
+    logger.info(
+        "/{0}, users count: {1}".format(commands.get_users, len(users)))
+
     if len(users) == 0:
         context.bot.send_message(
             chat_id=chat_id, text="There are not users twitch configured in this chat")
@@ -458,6 +480,17 @@ def handle_get_users(update, context):
 
     context.bot.send_message(
         chat_id=chat_id, text=msg, parse_mode='MarkDown')
+
+
+def handle_stream_status(update, context):
+    users = get_param_value(update, commands.stream_status)
+
+    if len(users) == 0:
+        context.bot.send_message(
+            chat_id=chat_id, text="The user's name is required. /{0} <username>[ <username>]".format(commands.stream_status))
+        return
+
+    t.get_stream_status(update, context, *users)
 
 
 def run():
@@ -540,6 +573,12 @@ def run():
             "command": commands.get_users,
             "handle": handle_get_users,
             "info": "Returns the list of users twitch in the chat",
+            "inHelp": True
+        },
+        {
+            "command": commands.stream_status,
+            "handle": handle_stream_status,
+            "info": "Returns the status for selected user(s). Use separated users by space.",
             "inHelp": True
         }
     ]
