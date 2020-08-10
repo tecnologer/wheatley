@@ -14,7 +14,7 @@ from userTwitch import UserTwitch
 PREFIX_DB = "twitch"
 
 
-logging.basicConfig(filename='ouput.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+logging.basicConfig(filename='output.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
@@ -180,7 +180,7 @@ class Twitch:
             msg = '{0} stream is not running 😞'.format(user.username)
             context.bot.send_message(
                 chat_id=user.chat_id, text=msg)
-            logger.info(msg + "; Chat: " + str(chat_id))
+            logger.info(msg + "; Chat: " + str(user.chat_id))
             if user.is_group:
                 try:
                     context.bot.unpin_chat_message(chat_id=user.chat_id)
