@@ -156,7 +156,7 @@ class Twitch:
                 retval = context.bot.send_message(
                     chat_id=user.chat_id, text=msg, parse_mode='MarkDown')
 
-                logger.info(msg + "; Chat: " + str(chat_id))
+                logger.info(msg + "; Chat: " + str(user.chat_id))
 
                 user.set_is_streaming(True)
                 dao.save(PREFIX_DB, "users", self.users)
@@ -204,6 +204,9 @@ class Twitch:
         return chat_users
 
     def get_stream_info(self, *twitch_ids):
+        if len(twitch_ids) == 0:
+            return []
+
         headers = {
             "client-id": self.client_id,
             "Authorization": "Bearer {0}".format(self.token["access_token"])

@@ -487,7 +487,7 @@ def handle_stream_status(update, context):
 
     if len(users) == 0:
         context.bot.send_message(
-            chat_id=chat_id, text="The user's name is required. /{0} <username>[ <username>]".format(commands.stream_status))
+            chat_id=update.effective_chat.id, text="The user's name is required. /{0} <username>[ <username>]".format(commands.stream_status))
         return
 
     t.get_stream_status(update, context, *users)
