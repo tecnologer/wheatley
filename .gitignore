@@ -4,3 +4,4 @@ __pycache__/
 bot_doc.ini
 twitch_bot.json
 Makefile
+*.log

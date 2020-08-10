@@ -1,4 +1,10 @@
 import hashlib
+import logging
+
+logging.basicConfig(filename='output.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 
 class IncompleteCommands:
@@ -33,9 +39,15 @@ class IncompleteCommands:
         return author in self.__commands and command == self.__commands[author]
 
     def clear(self):
+        logger.info(
+            "Clear imcomplete commands. {0}".format(self.__commands))
         self.__commands = {}
 
     def __cancel_other_commands(self, author):
         if not author in self.__commands:
+            logger.info(
+                "Clear empty imcomplete")
             return
+        logger.info(
+            "Clear imcomplete for user. {0}".format(self.__commands[author]))
         del self.__commands[author]
