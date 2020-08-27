@@ -4,6 +4,9 @@ class Language:
         super().__init__()
         self.code = update.effective_user.language_code
 
+        if self.code is None or self.code not in self.__languages:
+            self.code = 'en'
+
     code = 'en'
     __languages = {
         "es": {
