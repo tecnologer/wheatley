@@ -141,7 +141,6 @@ class Twitch:
             self.remaining_token_expiration(), self.get_token).start()
 
     def send_notfications(self, context):
-        logger.info("send_notfications")
         streams = self.get_stream_info(*self.unique_users_collection)
         streaming_users = []
         for nstream in streams:
@@ -156,7 +155,8 @@ class Twitch:
                 retval = context.bot.send_message(
                     chat_id=user.chat_id, text=msg, parse_mode='MarkDown')
 
-                logger.info(msg + "; Chat: " + str(user.chat_id))
+                logger.info("send_notfications: " + msg +
+                            "; Chat: " + str(user.chat_id))
 
                 user.set_is_streaming(True)
                 dao.save(PREFIX_DB, "users", self.users)
@@ -180,7 +180,8 @@ class Twitch:
             msg = '{0} stream is not running 😞'.format(user.username)
             context.bot.send_message(
                 chat_id=user.chat_id, text=msg)
-            logger.info(msg + "; Chat: " + str(user.chat_id))
+            logger.info("send_notfications: " + msg +
+                        "; Chat: " + str(user.chat_id))
             if user.is_group:
                 try:
                     context.bot.unpin_chat_message(chat_id=user.chat_id)
@@ -219,7 +220,7 @@ class Twitch:
 
         url = 'https://api.twitch.tv/helix/streams?{0}'.format(
             query_params)
-        logger.info(url)
+        logger.debug(url)
         response = get(
             url, headers=headers)
 
@@ -240,7 +241,7 @@ class Twitch:
                 url = 'https://api.twitch.tv/helix/games?id={0}'.format(
                     new_stream.game_id)
                 response = get(url, headers=headers)
-                logger.info(url)
+                logger.info("get_game_info: "+url)
                 if response.status_code != 200:
                     logger.warning(
                         "Error getting game's name from response", response.text)

@@ -6,6 +6,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from commands import Commands
 from incomplete_command import IncompleteCommands
+from language import Language
 
 logging.basicConfig(filename='output.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -42,6 +43,10 @@ def updateData(key, value):
     cfgfile.close()
 
 
+def is_master_chat(update):
+    return telegram_masterchat == update.effective_chat.id
+
+
 def configure_notif_workers():
     global updater, isNotifWorkerRunning
     if not t.is_client_id_set() or not t.is_client_secret_set() or isNotifWorkerRunning:
@@ -56,9 +61,10 @@ def configure_notif_workers():
 def is_allowed(update, context):
     '''Checks if the telegram's user is allowed to execute the command'''
     global telegram_whiteList
+    lang = Language(update)
     if update.effective_user.username is None:
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Permissions required")
+            chat_id=update.effective_chat.id, text=lang.get("is_allowed_fail"))
         return False
     user = update.effective_user.username.lower()
     if not user.startswith("@"):
@@ -66,7 +72,7 @@ def is_allowed(update, context):
 
     if not user in (user.lower() for user in telegram_whiteList):
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Permissions required")
+            chat_id=update.effective_chat.id, text=lang.get("is_allowed_fail"))
         return False
 
     return True
@@ -77,6 +83,7 @@ def get_param_value(update, command):
     if not command.startswith("/"):
         command = "/{0}".format(command)
 
+    lang = Language(update)
     text = update.message.text if update.edited_message is None else update.edited_message.text
     if not text.startswith(command):
         return []
@@ -92,22 +99,17 @@ def get_param_value(update, command):
 
 
 def check_missing_data(update, context):
+    lang = Language(update)
     if not t.is_client_id_set():
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Before continue, We need set the twitch client id.")
+            chat_id=update.effective_chat.id, text=lang.get("config_assist_client_id"))
         handle_twitch_client_id(update, context)
         return True
 
     if not t.is_client_secret_set():
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Also, We need set the twitch client secret.")
+            chat_id=update.effective_chat.id, text=lang.get("config_assist_client_secret"))
         handle_twitch_client_secret(update, context)
-        return True
-
-    if not t.are_there_users():
-        context.bot.send_message(
-            chat_id=update.effective_chat.id, text="It's required at least one User's twitch.")
-        handle_twitch_add_user(update, context)
         return True
 
     return False
@@ -115,32 +117,34 @@ def check_missing_data(update, context):
 
 def start(update, context):
     if not is_allowed(update, context):
-        notify_to_master(update, context, commands.start)
+        notify_to_master(update, context, commands.start.cmd)
         return
-    context.bot.send_message(
-        chat_id=update.effective_chat.id, text="Hello, I'll assist you to configure everything")
 
-    notify_to_master(update, context, commands.start, flag=0)
+    lang = Language(update)
+    context.bot.send_message(
+        chat_id=update.effective_chat.id, text=lang.get("config_assist_greeting"))
+
+    notify_to_master(update, context, commands.start.cmd, flag=0)
 
     if check_missing_data(update, context):
         return
 
     context.bot.send_message(
-        chat_id=update.effective_chat.id, text="Congratulations!, everything is configured.")
+        chat_id=update.effective_chat.id, text=lang.get("config_assist_configured"))
 
 
 def handle_twitch_client_id(update, context):
     if not is_allowed(update, context):
-        notify_to_master(update, context, commands.set_client_id)
+        notify_to_master(update, context, commands.set_client_id.cmd)
         return
-
+    lang = Language(update)
     incopleteCmd.mark_completed(update)
-    clientIds = get_param_value(update, commands.set_client_id)
+    clientIds = get_param_value(update, commands.set_client_id.cmd)
 
     if len(clientIds) == 0:
-        incopleteCmd.add(update, commands.set_client_id)
+        incopleteCmd.add(update, commands.set_client_id.cmd)
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Please type the twitch Client ID:")
+            chat_id=update.effective_chat.id, text=lang.get("client_id_request"))
     else:
         clientId = clientIds[0]
         t.set_client_id(clientId)
@@ -150,21 +154,21 @@ def handle_twitch_client_id(update, context):
             return
 
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Client Id configured")
-        notify_to_master(update, context, commands.set_client_id, flag=0)
+            chat_id=update.effective_chat.id, text=lang.get("client_id_success"))
+        notify_to_master(update, context, commands.set_client_id.cmd, flag=0)
 
 
 def handle_twitch_client_secret(update, context):
     if not is_allowed(update, context):
-        notify_to_master(update, context, commands.set_secret_id)
+        notify_to_master(update, context, commands.set_secret_id.cmd)
         return
-
-    secrets = get_param_value(update, commands.set_secret_id)
+    lang = Language(update)
+    secrets = get_param_value(update, commands.set_secret_id.cmd)
 
     if len(secrets) == 0:
-        incopleteCmd.add(update, commands.set_client_id)
+        incopleteCmd.add(update, commands.set_client_id.cmd)
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Please type the twitch Client secret:")
+            chat_id=update.effective_chat.id, text=lang.get("client_secret_request"))
     else:
         secret = secrets[0]
         t.set_client_secret(secret)
@@ -174,7 +178,7 @@ def handle_twitch_client_secret(update, context):
             return
 
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Client secret is configured")
+            chat_id=update.effective_chat.id, text=lang.get("client_secret_success"))
         return
 
 
@@ -184,23 +188,24 @@ def generic_handle(update, context):
     if msgText.startswith("/") or msgText == "" or msgText is None:
         return
 
+    lang = Language(update)
     need_check = False
 
-    if incopleteCmd.is_incomplete(update, commands.set_client_id) and is_allowed(update, context):
+    if incopleteCmd.is_incomplete(update, commands.set_client_id.cmd) and is_allowed(update, context):
         t.set_client_id(msgText)
         need_check = True
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Client Id is configured")
-        notify_to_master(update, context, commands.set_client_id, flag=0)
-    elif incopleteCmd.is_incomplete(update, commands.set_secret_id) and is_allowed(update, context):
+            chat_id=update.effective_chat.id, text=lang.get("client_id_success"))
+        notify_to_master(update, context, commands.set_client_id.cmd, flag=0)
+    elif incopleteCmd.is_incomplete(update, commands.set_secret_id.cmd) and is_allowed(update, context):
         t.set_client_secret(msgText)
 
         need_check = True
 
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Client secret is configured")
-        notify_to_master(update, context, commands.set_client_id, flag=0)
-    elif incopleteCmd.is_incomplete(update, commands.add_user):
+            chat_id=update.effective_chat.id, text=lang.get("client_secret_success"))
+        notify_to_master(update, context, commands.set_client_id.cmd, flag=0)
+    elif incopleteCmd.is_incomplete(update, commands.add_user.cmd):
         res = t.add_user(msgText, update.effective_chat.id,
                          update.effective_chat.type != update.effective_chat.PRIVATE)
 
@@ -210,16 +215,16 @@ def generic_handle(update, context):
         else:
             need_check = True
             context.bot.send_message(chat_id=update.effective_chat.id,
-                                     text="Now I'll notify you in this chat when @{0} is streaming".format(msgText))
-            notify_to_master(update, context, commands.add_user, msgText)
+                                     text=lang.get("add_user_success").format(msgText))
+            notify_to_master(update, context, commands.add_user.cmd, msgText)
 
-    elif incopleteCmd.is_incomplete(update, commands.remove_user):
+    elif incopleteCmd.is_incomplete(update, commands.remove_user.cmd):
         res = t.remove_user(msgText, update.effective_chat.id)
 
-        notify_to_master(update, context, commands.remove_user, msgText)
+        notify_to_master(update, context, commands.remove_user.cmd, msgText)
 
-        msg = "The notifications for @{0} are turned off".format(
-            res.username) if res is not None else "Users is not configured"
+        msg = lang.get("remove_user_success").format(
+            res.username) if res is not None else lang.get("remove_user_not_found")
 
         context.bot.send_message(
             chat_id=update.effective_chat.id, text=msg)
@@ -232,8 +237,9 @@ def generic_handle(update, context):
 
 def handle_cancel(update, context):
     incopleteCmd.mark_completed(update)
+    lang = Language(update)
     context.bot.send_message(
-        chat_id=update.effective_chat.id, text="Done!, everything is canceled:")
+        chat_id=update.effective_chat.id, text=lang.get("cancel_success"))
 
 
 def handle_error(update, context):
@@ -243,35 +249,40 @@ def handle_error(update, context):
 
 def handle_help(update, context):
     global commandsList
-    logger.info("/{0}".format(commands.help))
+    lang = Language(update)
 
-    helpMsg = u"Available commands: \n\n"
+    logger.info("/{0}".format(commands.help.cmd))
+
+    helpMsg = u"**{0}**\n\n{1}\n\n".format(
+        lang.get("bot_description"), lang.get("help_header"))
     for command in commandsList:
-        if command["inHelp"]:
+        if command.show_in_help or is_master_chat(update):
             helpMsg = helpMsg + \
-                u"- /{0}: {1}\n".format(command["command"], command["info"])
+                u"- /{0}: {1}\n".format(command.cmd,
+                                        command.get_info(lang.code))
 
     context.bot.send_message(
-        chat_id=update.effective_chat.id, text=helpMsg)
+        chat_id=update.effective_chat.id, text=helpMsg, parse_mode='MarkDown')
 
 
 def handle_twitch_add_user(update, context):
-    users = get_param_value(update, commands.add_user)
+    users = get_param_value(update, commands.add_user.cmd)
     chat_id = update.effective_chat.id
 
+    lang = Language(update)
     logger.info(
-        "/{0} {1} in chat {2}".format(commands.add_user, " ".join(users), chat_id))
+        "/{0} {1} in chat {2}".format(commands.add_user.cmd, " ".join(users), chat_id))
 
     incopleteCmd.mark_completed(update)
     if len(t.unique_users_collection) >= 100:
         context.bot.send_message(
-            chat_id=chat_id, text="The limit of users has been reached, please contact any of this administrators: {0}".format(", ".join(telegram_whiteList)))
+            chat_id=chat_id, text=lang.get("add_user_limit_reached").format(", ".join(telegram_whiteList)))
         return
 
     if len(users) == 0:
-        incopleteCmd.add(update, commands.add_user)
+        incopleteCmd.add(update, commands.add_user.cmd)
         context.bot.send_message(
-            chat_id=chat_id, text="Type the username of User's twitch:")
+            chat_id=chat_id, text=lang.get("add_user_request_name"))
     else:
         added_users = []
         for user in users:
@@ -284,24 +295,24 @@ def handle_twitch_add_user(update, context):
                 added_users.append(user)
 
         if len(added_users) > 0:
-            isOrAre = "is" if len(users) == 1 else "are"
             context.bot.send_message(
-                chat_id=chat_id, text="Now I'll notify you in this chat when @{0} {1} streaming".format(", @".join(added_users), isOrAre))
+                chat_id=chat_id, text=lang.get("add_user_success").format(", @".join(added_users)))
 
-            notify_to_master(update, context, commands.add_user, users)
+            notify_to_master(update, context, commands.add_user.cmd, users)
 
 
 def handle_twitch_remove_user(update, context):
     incopleteCmd.mark_completed(update)
-    users = get_param_value(update, commands.remove_user)
+    users = get_param_value(update, commands.remove_user.cmd)
     chat_id = update.effective_chat.id
     logger.info(
-        "/{0} {1} in chat: {2}".format(commands.remove_user, " ".join(users), chat_id))
+        "/{0} {1} in chat: {2}".format(commands.remove_user.cmd, " ".join(users), chat_id))
 
+    lang = Language(update)
     if len(users) == 0:
-        incopleteCmd.add(update, commands.remove_user)
+        incopleteCmd.add(update, commands.remove_user.cmd)
         context.bot.send_message(
-            chat_id=chat_id, text="Type the username of User's twitch:")
+            chat_id=chat_id, text=lang.get("remove_user_request_name"))
     else:
         removed_users = []
         invalid_users = []
@@ -312,27 +323,28 @@ def handle_twitch_remove_user(update, context):
             else:
                 invalid_users.append(user)
 
-        msg = "The notifications for @{0} are turned off".format(
-            ", @".join(removed_users)) if len(removed_users) > 0 else "This users {0} are not configured".format(invalid_users)
+        msg = lang.get("remove_user_success").format(
+            ", @".join(removed_users)) if len(removed_users) > 0 else lang.get("remove_user_not_found").format(invalid_users)
         context.bot.send_message(
             chat_id=chat_id, text=msg)
 
         if len(removed_users) > 0:
-            notify_to_master(update, context, commands.remove_user, users)
+            notify_to_master(update, context, commands.remove_user.cmd, users)
 
 
 def handle_add_admin(update, context):
     if not is_allowed(update, context):
         return
 
-    admins = get_param_value(update, commands.add_admin)
+    lang = Language(update)
+    admins = get_param_value(update, commands.add_admin.cmd)
     chat_id = update.effective_chat.id
     logger.info(
-        "/{0} {1} in chat: {2}".format(commands.add_admin, " ".join(admins), chat_id))
+        "/{0} {1} in chat: {2}".format(commands.add_admin.cmd, " ".join(admins), chat_id))
 
     if len(admins) == 0:
         context.bot.send_message(
-            chat_id=chat_id, text="The name of admin(s) is required. use: /addadmin <telegram_username>")
+            chat_id=chat_id, text=lang.get("add_admin_no_specified").format(commands.add_admin.cmd))
 
     new_added = []
     for admin in admins:
@@ -347,22 +359,23 @@ def handle_add_admin(update, context):
     if len(new_added) > 0:
         updateData("telegram_whiteList", telegram_whiteList)
         context.bot.send_message(
-            chat_id=chat_id, text="{0} is admin 😉".format(", ".join(new_added)))
-        notify_to_master(update, context, commands.add_admin, new_added)
+            chat_id=chat_id, text=lang.get("add_admin_success").format(", ".join(new_added)))
+        notify_to_master(update, context, commands.add_admin.cmd, new_added)
 
 
 def handle_remove_admin(update, context):
     if not is_allowed(update, context):
         return
 
-    admins = get_param_value(update, commands.remove_admin)
+    lang = Language(update)
+    admins = get_param_value(update, commands.remove_admin.cmd)
 
     chat_id = update.effective_chat.id
     logger.info(
-        "/{0} {1} in chat: {2}".format(commands.add_admin, " ".join(admins), chat_id))
+        "/{0} {1} in chat: {2}".format(commands.add_admin.cmd, " ".join(admins), chat_id))
     if len(admins) == 0:
         context.bot.send_message(
-            chat_id=chat_id, text="The name of admin(s) is required. use: /removeadmin <telegram_username>")
+            chat_id=chat_id, text=lang.get("remove_admin_no_specified").format(commands.remove_admin.cmd))
 
     admin_removed = []
     for admin in admins:
@@ -377,8 +390,9 @@ def handle_remove_admin(update, context):
     if len(admin_removed) > 0:
         updateData("telegram_whiteList", telegram_whiteList)
         context.bot.send_message(
-            chat_id=chat_id, text="{0} are no longer admin 😢".format(", ".join(admin_removed)))
-        notify_to_master(update, context, commands.remove_admin, admin_removed)
+            chat_id=chat_id, text=lang.get("remove_admin_success").format(", ".join(admin_removed)))
+        notify_to_master(
+            update, context, commands.remove_admin.cmd, admin_removed)
 
 
 def handle_set_chat_master(update, context):
@@ -386,18 +400,19 @@ def handle_set_chat_master(update, context):
         return
     global telegram_masterchat
 
+    lang = Language(update)
     if telegram_masterchat == update.effective_chat.id:
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Noting to chance")
+            chat_id=update.effective_chat.id, text=lang.get("chat_master_no_change"))
         return
 
-    msg = "Now I'll notify you here if any weird happens"
+    msg = lang.get("chat_master_success")
     try:
-        notify_to_master(update, context, commands.set_master_chat)
+        notify_to_master(update, context, commands.set_master_chat.cmd)
         telegram_masterchat = update.effective_chat.id
         updateData("telegram_masterchat", telegram_masterchat)
     except:
-        msg = "an exception occurred"
+        msg = lang.get("chat_master_error")
 
     context.bot.send_message(
         chat_id=update.effective_chat.id, text=msg)
@@ -417,29 +432,29 @@ def notify_to_master(update, context, cmd, value=None, flag=None):
 
     chat_title = author if update.effective_chat.title is None else update.effective_chat.title
 
-    if cmd == commands.start and flag is None:
+    if cmd == commands.start.cmd and flag is None:
         msg = "{0} tried to start me".format(author)
-    elif cmd == commands.start and flag == 0:
+    elif cmd == commands.start.cmd and flag == 0:
         msg = "{0} started me".format(author)
-    elif cmd == commands.set_client_id:
+    elif cmd == commands.set_client_id.cmd:
         msg = "{0} tried to set the client id".format(author)
-    elif cmd == commands.set_client_id and flag == 0:
+    elif cmd == commands.set_client_id.cmd and flag == 0:
         msg = "{0} updated the client id".format(author)
-    elif cmd == commands.set_secret_id and flag == 0:
+    elif cmd == commands.set_secret_id.cmd and flag == 0:
         msg = "{0} updated the client secret".format(author)
-    elif cmd == commands.add_user:
+    elif cmd == commands.add_user.cmd:
         msg = '{0} added the user {1} to {2}({3}) with name "{4}"'.format(
             author, value, update.effective_chat.type, update.effective_chat.id, chat_title)
-    elif cmd == commands.add_admin:
+    elif cmd == commands.add_admin.cmd:
         msg = "{0} added {1} as new admin".format(
             author, value)
-    elif cmd == commands.set_master_chat:
+    elif cmd == commands.set_master_chat.cmd:
         msg = '{0} changed the master chat to {1}({2}) named "{3}"'.format(
             author, update.effective_chat.type, update.effective_chat.id, chat_title)
-    elif cmd == commands.remove_user:
+    elif cmd == commands.remove_user.cmd:
         msg = '{0} removed the user {1} from {2}({3}) with name "{4}"'.format(
             author, value, update.effective_chat.type, update.effective_chat.id, chat_title)
-    elif cmd == commands.remove_admin:
+    elif cmd == commands.remove_admin.cmd:
         msg = "{0} removed {1} as admin".format(
             author, value)
     else:
@@ -453,27 +468,28 @@ def handle_get_users(update, context):
     chat_id = update.effective_chat.id
     users = t.get_users_by_chat(chat_id)
 
+    lang = Language(update)
     logger.info(
-        "/{0}, users count: {1}".format(commands.get_users, len(users)))
+        "/{0}, users count: {1}".format(commands.get_users.cmd, len(users)))
 
     if len(users) == 0:
         context.bot.send_message(
-            chat_id=chat_id, text="There are not users twitch configured in this chat")
+            chat_id=chat_id, text=lang.get("get_users_no_users"))
         return
 
-    msg = "*The following users twitch are registered in this chat:*\n\n"
+    msg = lang.get("get_users_header")
     invalid_users = []
     for user in users:
         if user.twitch_id is None:
             invalid_users.append(user)
             continue
-        msg = "{0}• twitch.tv/{1}\n".format(msg, user.username)
+        msg = "{0}• [{1}](twitch.tv/{1})\n".format(msg, user.username)
 
     if len(invalid_users) == len(users):
-        msg = "*The following users twitch are registered in this chat:*\n\n"
+        msg = lang.get("get_users_header")
 
     if len(invalid_users) > 0:
-        msg = "{0}\n*The following users twitch are invalid:*\n\n".format(msg)
+        msg = lang.get("get_users_header_invalid_users").format(msg)
 
         for invalid in invalid_users:
             msg = "{0}• {1}\n".format(msg, invalid.username)
@@ -483,11 +499,11 @@ def handle_get_users(update, context):
 
 
 def handle_stream_status(update, context):
-    users = get_param_value(update, commands.stream_status)
-
+    users = get_param_value(update, commands.stream_status.cmd)
+    lang = Language(update)
     if len(users) == 0:
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text="The user's name is required. /{0} <username>[ <username>]".format(commands.stream_status))
+            chat_id=update.effective_chat.id, text=lang.get("stream_status_error").format(commands.stream_status.cmd))
         return
 
     t.get_stream_status(update, context, *users)
@@ -507,86 +523,25 @@ def run():
     logger.info("creating bot updater")
     updater = Updater(telegram_botToken, use_context=True)
     dp = updater.dispatcher
-
     commandsList = [
-        {
-            "command": commands.start,
-            "handle": start,
-            "info": "Starts the bot",
-            "inHelp": False
-        },
-        {
-            "command": commands.set_client_id,
-            "handle": handle_twitch_client_id,
-            "info": "Stores the twitch client id",
-            "inHelp": False
-        },
-        {
-            "command": commands.set_secret_id,
-            "handle": handle_twitch_client_secret,
-            "info": "Stores the twitch client secret",
-            "inHelp": False
-        },
-        {
-            "command": commands.help,
-            "handle": handle_help,
-            "info": "Shows the basic info of commands",
-            "inHelp": False
-        },
-        {
-            "command": commands.cancel,
-            "handle": handle_cancel,
-            "info": "Cancels the active command",
-            "inHelp": True
-        },
-        {
-            "command": commands.add_user,
-            "handle": handle_twitch_add_user,
-            "info": "Adds a new user(s) to the list to monitor its stream status. Use users separated by space to add multiple.",
-            "inHelp": True
-        },
-        {
-            "command": commands.remove_user,
-            "handle": handle_twitch_remove_user,
-            "info": "Removes a user(s) from the list to monitor its stream status. Use users separated by space to add multiple.",
-            "inHelp": True
-        },
-        {
-            "command": commands.add_admin,
-            "handle": handle_add_admin,
-            "info": "Adds a new telegram's user to whitelist (permissions). Use users separated by space to add multiple.",
-            "inHelp": False
-        },
-        {
-            "command": commands.remove_admin,
-            "handle": handle_remove_admin,
-            "info": "Removes a telegram's user from whitelist (permissions). Use users separated by space to add multiple.",
-            "inHelp": False
-        },
-        {
-            "command": commands.set_master_chat,
-            "handle": handle_set_chat_master,
-            "info": "Marks this chat as master to recive notifications (debugging purpose).",
-            "inHelp": False
-        },
-        {
-            "command": commands.get_users,
-            "handle": handle_get_users,
-            "info": "Returns the list of users twitch in the chat",
-            "inHelp": True
-        },
-        {
-            "command": commands.stream_status,
-            "handle": handle_stream_status,
-            "info": "Returns the status for selected user(s). Use separated users by space.",
-            "inHelp": True
-        }
+        commands.start.set_handle(start),
+        commands.set_client_id.set_handle(handle_twitch_client_id),
+        commands.set_secret_id.set_handle(handle_twitch_client_secret),
+        commands.help.set_handle(handle_help),
+        commands.cancel.set_handle(handle_cancel),
+        commands.add_user.set_handle(handle_twitch_add_user),
+        commands.remove_user.set_handle(handle_twitch_remove_user),
+        commands.add_admin.set_handle(handle_add_admin),
+        commands.remove_admin.set_handle(handle_remove_admin),
+        commands.set_master_chat.set_handle(handle_set_chat_master),
+        commands.get_users.set_handle(handle_get_users),
+        commands.stream_status.set_handle(handle_stream_status),
     ]
 
     logger.info("configuring handlers")
 
-    for i, v in enumerate(commandsList):
-        dp.add_handler(CommandHandler(v["command"], v["handle"]))
+    for command in commandsList:
+        dp.add_handler(CommandHandler(command.cmd, command.handle))
 
     dp.add_error_handler(handle_error)
     dp.add_handler(MessageHandler(Filters.text, generic_handle))
