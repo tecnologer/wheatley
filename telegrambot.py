@@ -8,7 +8,7 @@ from commands import Commands
 from incomplete_command import IncompleteCommands
 from language import Language
 
-logging.basicConfig(filename='output.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+logging.basicConfig(filename='/tmp/twitch_bot_output.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
@@ -45,6 +45,15 @@ def updateData(key, value):
 
 def is_master_chat(update):
     return telegram_masterchat == update.effective_chat.id
+
+
+def get_message_from_update(update):
+    if update.channel_post is not None:
+        msgText = update.channel_post.text
+    else:
+        msgText = update.message.text if update.edited_message is None else update.edited_message.text
+
+    return msgText
 
 
 def configure_notif_workers():
@@ -84,11 +93,12 @@ def get_param_value(update, command):
         command = "/{0}".format(command)
 
     lang = Language(update)
-    text = update.message.text if update.edited_message is None else update.edited_message.text
+    text = get_message_from_update(update)
     if not text.startswith(command):
         return []
 
-    botName = update.effective_user.bot.username.lower()
+    botName = update.effective_user.bot.username.lower(
+    ) if update.effective_user is not None else ""
 
     text = text.lower().replace(command.lower(), "").replace(
         botName, "").replace("@", "", -1)
@@ -182,8 +192,30 @@ def handle_twitch_client_secret(update, context):
         return
 
 
+def isCommandFromChannel(update, context):
+    postTxt = update.channel_post.text
+    if postTxt == "":
+        return False
+
+    cmd = postTxt.split(" ")[0]
+    if cmd == "" or len(cmd) == 1:
+        return False
+
+    cmd = cmd[1:]
+    for command in commandsList:
+        if command.cmd == cmd:
+            command.handle(update, context)
+            return True
+
+    return False
+
+
 def generic_handle(update, context):
-    msgText = update.message.text if update.edited_message is None else update.edited_message.text
+    if update.channel_post is not None:
+        if isCommandFromChannel(update, context):
+            return
+
+    msgText = get_message_from_update(update)
 
     if msgText.startswith("/") or msgText == "" or msgText is None:
         return

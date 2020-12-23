@@ -14,7 +14,7 @@ from userTwitch import UserTwitch
 PREFIX_DB = "twitch"
 
 
-logging.basicConfig(filename='output.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+logging.basicConfig(filename='/tmp/twitch_bot_output.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)

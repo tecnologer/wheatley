@@ -1,7 +1,7 @@
 import hashlib
 import logging
 
-logging.basicConfig(filename='output.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+logging.basicConfig(filename='/tmp/twitch_bot_output.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,10 @@ class IncompleteCommands:
         self.__cancel_other_commands(author)
 
     def get_author(self, update):
-        userid = update.effective_user.id
+        userid = update.effective_user.id if update.effective_user is not None else ''
+        if update.channel_post is not None:
+            userid = update.channel_post.chat_id
+
         chatid = update.effective_chat.id
         author = "{0}-{1}".format(userid, chatid)
         return hashlib.md5(str.encode(author)).hexdigest()

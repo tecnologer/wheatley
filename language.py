@@ -2,7 +2,7 @@
 class Language:
     def __init__(self, update):
         super().__init__()
-        self.code = update.effective_user.language_code
+        self.code = update.effective_user.language_code if update.effective_user is not None else 'en'
 
         if self.code is None or self.code not in self.__languages:
             self.code = 'en'
