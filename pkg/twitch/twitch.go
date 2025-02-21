@@ -25,7 +25,7 @@ func New(clientID, clientSecret string) *Twitch {
 }
 
 func (t *Twitch) StreamByName(ctx context.Context, username string) (*api.Stream, error) {
-	token, err := t.getToken()
+	token, err := t.getToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get token: %w", err)
 	}
@@ -42,12 +42,12 @@ func (t *Twitch) StreamByName(ctx context.Context, username string) (*api.Stream
 	return &streams.Data[0], nil
 }
 
-func (t *Twitch) getToken() (*Token, error) {
+func (t *Twitch) getToken(ctx context.Context) (*Token, error) {
 	if t.token.IsValid() {
 		return t.token, nil
 	}
 
-	token, err := t.token.Renew(t.clientID, t.clientSecret)
+	token, err := t.token.Renew(ctx, t.clientID, t.clientSecret)
 	if err != nil {
 		return nil, fmt.Errorf("get new token: %w", err)
 	}

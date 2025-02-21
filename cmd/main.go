@@ -5,8 +5,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/tecnologer/wheatley/pkg/twitch"
 	"log"
+	"os"
+
+	"github.com/tecnologer/wheatley/pkg/twitch"
 )
 
 var (
@@ -15,19 +17,21 @@ var (
 )
 
 func init() {
-	flag.StringVar(&clientID, "client-id", "", "Twitch Client ID")
-	flag.StringVar(&clientSecret, "client-secret", "", "Twitch client secret")
+	flag.StringVar(&clientID, "client-id", os.Getenv("TWITCH_CLIENT_ID"), "Twitch Client ID")
+	flag.StringVar(&clientSecret, "client-secret", os.Getenv("TWITCH_CLIENT_SECRET"), "Twitch Client Secret")
 	flag.Parse()
 }
 
 func main() {
-	stream, err := twitch.New(clientID, clientSecret).StreamByName(context.Background(), "texarcane")
+	streamerName := "tokejay2"
+
+	stream, err := twitch.New(clientID, clientSecret).StreamByName(context.Background(), streamerName)
 	if err != nil && !errors.Is(err, twitch.ErrNotFound) {
 		log.Fatalln(err)
 	}
 
 	if errors.Is(err, twitch.ErrNotFound) {
-		fmt.Printf("texarcane is not live\n")
+		fmt.Printf(streamerName + " is not live\n")
 		return
 	}
 
