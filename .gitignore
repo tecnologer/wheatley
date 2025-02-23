@@ -8,3 +8,5 @@ Makefile
 .env
 .idea/
 bin/
+coverage.out
+*.db
