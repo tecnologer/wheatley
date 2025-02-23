@@ -43,27 +43,6 @@ Build the binary.
 go build -o wheatley cmd/main.go
 ```
 
-NAME:
-   wheatley - Execute the bot to interact with the Twitch API and the users to send notifications when a streamer goes live.
-
-USAGE:
-   wheatley [global options] command [command options]
-
-COMMANDS:
-   help, h  Shows a list of commands or help for one command
-
-GLOBAL OPTIONS:
-   --telegram-token value, -t value        Telegram bot token. [$WHEATLEY_TELEGRAM_BOT_TOKEN]
-   --interval value, -i value              Interval in minutes to check if a streamer is live. (default: 1) [$WHEATLEY_INTERVAL]
-   --verbose, -V                           Enable verbose output. (default: false)
-   --db-name value, -d value               Database name. [$WHEATLEY_DB_NAME]
-   --db-password value, -p value           Database password.
-   --twitch-client-id value, -c value      Twitch client ID. [$WHEATLEY_TWITCH_CLIENT_ID]
-   --twitch-client-secret value, -s value  Twitch client secret. [$WHEATLEY_TWITCH_CLIENT_SECRET]
-   --resend-interval value, -r value       Interval in hours to resend a notification. (default: 6) [$WHEATLEY_RESEND_INTERVAL]
-   --help, -h                              show help
-
-
 Run the binary.
 
 ```bash
