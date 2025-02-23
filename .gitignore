@@ -5,3 +5,8 @@ bot_doc.ini
 twitch_bot.json
 Makefile
 *.log
+.env
+.idea/
+bin/
+coverage.out
+*.db
