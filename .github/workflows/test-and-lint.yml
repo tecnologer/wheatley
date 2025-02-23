@@ -23,5 +23,10 @@ jobs:
           go test -v ./... -coverprofile=coverage.out -coverpkg=./cmd/...,./pkg/...
           go tool cover -func=coverage.out
 
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: latest
+
       - name: Lint
         run: golangci-lint run ./...
