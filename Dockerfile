@@ -1,7 +1,16 @@
-FROM python:3
-COPY . /
-# RUN ls -la
-RUN python -m pip install --upgrade pip
-RUN pip install telegram pickledb requests
-RUN pip install python-telegram-bot --upgrade
-CMD ["python", "Bot.py"]
+FROM golang
+
+WORKDIR /wheatley
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY ./cmd ./cmd
+COPY ./pkg ./pkg
+COPY ./wheatley.db ./wheatley.db
+
+RUN go mod tidy
+
+RUN go build -o wheatley cmd/main.go
+
+CMD ["./wheatley"]
