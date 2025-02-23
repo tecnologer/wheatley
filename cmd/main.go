@@ -1,39 +1,18 @@
 package main
 
 import (
-	"context"
-	"errors"
-	"flag"
-	"fmt"
-	"log"
 	"os"
 
-	"github.com/tecnologer/wheatley/pkg/twitch"
+	"github.com/tecnologer/wheatley/cmd/cli"
+	"github.com/tecnologer/wheatley/pkg/utils/log"
 )
 
-var (
-	clientID     string
-	clientSecret string
-)
-
-func init() {
-	flag.StringVar(&clientID, "client-id", os.Getenv("TWITCH_CLIENT_ID"), "Twitch Client ID")
-	flag.StringVar(&clientSecret, "client-secret", os.Getenv("TWITCH_CLIENT_SECRET"), "Twitch Client Secret")
-	flag.Parse()
-}
+var version string
 
 func main() {
-	streamerName := "tokejay2"
+	newCLI := cli.NewCLI(version)
 
-	stream, err := twitch.New(clientID, clientSecret).StreamByName(context.Background(), streamerName)
-	if err != nil && !errors.Is(err, twitch.ErrNotFound) {
-		log.Fatalln(err)
+	if err := newCLI.Run(os.Args); err != nil {
+		log.Error(err.Error())
 	}
-
-	if errors.Is(err, twitch.ErrNotFound) {
-		fmt.Printf(streamerName + " is not live\n")
-		return
-	}
-
-	fmt.Printf("%s is live! - Streaming %s to %d viewers\n", stream.UserDisplayName, stream.GameName, stream.ViewerCount)
 }
