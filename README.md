@@ -6,6 +6,19 @@ Wheatley is a bot that notifies when a twitch streamer is online.
 
 ## Usage
 
+1. Download the latest release from the [releases page][2].
+2. Run the binary with the required flags.
+
+```bash
+./wheatley --telegram-token your_telegram_bot_token \
+              --db-name your_db_name \
+              --db-password your_db_password \
+              --twitch-client-id your_twitch_client_id \
+              --twitch-client-secret your_twitch_client_secret
+```
+
+## Build
+
 ### Docker
 
 Create a .env file with the required environment variables.
@@ -74,3 +87,4 @@ The `--help` flag is available to show the available commands and flags.
 - [ ] multi-language (ESP/ENG)
 
 [1]: https://i1.theportalwiki.net/img/thumb/9/94/Wheatley.png/300px-Wheatley.png
+[2]: https://github.com/tecnologer/wheatley/releases

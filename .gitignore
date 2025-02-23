@@ -10,3 +10,4 @@ Makefile
 bin/
 coverage.out
 *.db
+dist/
