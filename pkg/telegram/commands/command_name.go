@@ -3,6 +3,7 @@ package commands
 type CommandName string
 
 const (
-	AddStreamer    CommandName = "addstreamer"
-	RemoveStreamer CommandName = "removeuser"
+	Start          CommandName = "start"
+	AddStreamer    CommandName = "add"
+	RemoveStreamer CommandName = "remove"
 )

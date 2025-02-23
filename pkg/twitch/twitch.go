@@ -9,18 +9,21 @@ import (
 
 var ErrNotFound = fmt.Errorf("stream not found")
 
-type Twitch struct {
-	client       *api.Client
-	clientSecret string
-	clientID     string
-	token        *Token
+type Config struct {
+	ClientID     string
+	ClientSecret string
 }
 
-func New(clientID, clientSecret string) *Twitch {
+type Twitch struct {
+	*Config
+	client *api.Client
+	token  *Token
+}
+
+func New(config *Config) *Twitch {
 	return &Twitch{
-		client:       api.New(clientID),
-		clientSecret: clientSecret,
-		clientID:     clientID,
+		client: api.New(config.ClientID),
+		Config: config,
 	}
 }
 
@@ -47,7 +50,7 @@ func (t *Twitch) getToken(ctx context.Context) (*Token, error) {
 		return t.token, nil
 	}
 
-	token, err := t.token.Renew(ctx, t.clientID, t.clientSecret)
+	token, err := t.token.Renew(ctx, t.ClientID, t.ClientSecret)
 	if err != nil {
 		return nil, fmt.Errorf("get new token: %w", err)
 	}

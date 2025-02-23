@@ -37,10 +37,6 @@ func (c *Config) OK() error {
 		return fmt.Errorf("missing db name")
 	}
 
-	if c.Password == "" {
-		return fmt.Errorf("missing db password")
-	}
-
 	if !strings.HasSuffix(c.DBName, ".db") {
 		c.DBName += ".db"
 	}

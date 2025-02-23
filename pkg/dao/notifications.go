@@ -50,9 +50,32 @@ func (s *Notifications) CreateNotification(notification *models.Notification) er
 }
 
 func (s *Notifications) DeleteNotification(notification *models.Notification) error {
-	err := s.db.Delete(notification).Error
+	err := s.db.Unscoped().
+		Where("twitch_streamer_name = ? AND telegram_chat_id = ?", notification.TwitchStreamerName, notification.TelegramChatID).
+		Delete(notification).
+		Error
 	if err != nil {
 		return fmt.Errorf("deleting notification settings: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Notifications) AllNotifications() ([]*models.Notification, error) {
+	var notifications []*models.Notification
+
+	err := s.db.Find(&notifications).Error
+	if err != nil {
+		return nil, fmt.Errorf("getting all notifications: %w", err)
+	}
+
+	return notifications, nil
+}
+
+func (s *Notifications) UpdateNotification(notification *models.Notification) error {
+	err := s.db.Save(notification).Error
+	if err != nil {
+		return fmt.Errorf("updating notification settings: %w", err)
 	}
 
 	return nil

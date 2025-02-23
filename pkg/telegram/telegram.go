@@ -43,7 +43,10 @@ func (b *Bot) SendMessage(chatID int64, text string) error {
 }
 
 func (b *Bot) ReadUpdates() error {
-	var err error
+	var (
+		err error
+		msg string
+	)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -51,31 +54,30 @@ func (b *Bot) ReadUpdates() error {
 	updates := b.GetUpdatesChan(u)
 
 	for update := range updates {
-		err = b.ExecCommand(update)
+		msg = b.ExecCommand(update)
+		if msg == "" {
+			continue
+		}
+
+		err = b.SendMessage(message.GetChatIDFromUpdate(update), msg)
 		if err != nil {
-			b.SendMessage(update.Message.Chat.ID, fmt.Sprintf("error: %s", err))
+			log.Errorf("sending message: %v", err)
 		}
 	}
 
 	return nil
 }
 
-func (b *Bot) ExecCommand(update tgbotapi.Update) error {
-	msg := message.GetFromUpdate(update)
-	if msg == "" {
-		return nil
+func (b *Bot) ExecCommand(update tgbotapi.Update) string {
+	inputMsg := message.GetFromUpdate(update)
+	if inputMsg == "" {
+		return ""
 	}
 
-	cmdName, args := message.ExtractCommand(msg)
+	cmdName, args := message.ExtractCommand(inputMsg)
 	if cmdName == "" {
-		return nil
+		return ""
 	}
 
-	err := b.commands.Execute(cmdName, update, args...)
-	if err == nil {
-		b.SendMessage(update.Message.Chat.ID, "command executed")
-		return nil
-	}
-
-	return nil
+	return b.commands.Execute(cmdName, update, args...)
 }

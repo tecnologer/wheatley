@@ -6,7 +6,7 @@ import (
 )
 
 type (
-	CommandHandler func(tgbotapi.Update, ...string) error
+	CommandHandler func(cmd *Command, update tgbotapi.Update, args ...string) *Response
 	HelpHandler    func() string
 )
 
@@ -14,13 +14,14 @@ type Commands struct {
 	Map map[CommandName]*Command
 }
 
-func NewCommands(db *db.Connection) *Commands {
+func NewCommands(dbCnn *db.Connection) *Commands {
 	commands := &Commands{
 		Map: make(map[CommandName]*Command),
 	}
 
 	commands.Add(
-		AddStreamerCmd(db),
+		AddStreamerCmd(dbCnn),
+		RemoveStreamerCmd(dbCnn),
 	)
 
 	return commands
@@ -54,14 +55,16 @@ func (c *Commands) HasHelp(cmdName CommandName) bool {
 	return c.Map[cmdName].Help != nil
 }
 
-func (c *Commands) Execute(cmdName string, update tgbotapi.Update, args ...string) error {
-	cmd := CommandName(cmdName)
+func (c *Commands) Execute(inputCmdName string, update tgbotapi.Update, args ...string) string {
+	cmdName := CommandName(inputCmdName)
 
-	if !c.HasHandler(cmd) {
-		return nil
+	if !c.HasHandler(cmdName) {
+		return ""
 	}
 
-	return c.Map[cmd].Handler(update, args...)
+	cmd := c.Map[cmdName]
+
+	return cmd.Handler(cmd, update, args...).Message()
 }
 
 func (c *Commands) Help(cmdName string) string {
@@ -81,6 +84,6 @@ type Command struct {
 	Help        HelpHandler
 }
 
-func DefaultCommands() *Commands {
-	return &Commands{}
+func (c *Command) HasHelp() bool {
+	return c != nil && c.Help != nil
 }
