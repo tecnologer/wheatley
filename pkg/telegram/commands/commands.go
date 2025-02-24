@@ -22,6 +22,8 @@ func NewCommands(dbCnn *db.Connection) *Commands {
 	commands.Add(
 		AddStreamerCmd(dbCnn),
 		RemoveStreamerCmd(dbCnn),
+		HelpCmd(commands),
+		ListStreamersCmd(dbCnn),
 	)
 
 	return commands

@@ -80,3 +80,14 @@ func (s *Notifications) UpdateNotification(notification *models.Notification) er
 
 	return nil
 }
+
+func (s *Notifications) NotificationsByChatID(chatID int64) ([]*models.Notification, error) {
+	var notifications []*models.Notification
+
+	err := s.db.Where("telegram_chat_id = ?", chatID).Find(&notifications).Error
+	if err != nil {
+		return nil, fmt.Errorf("getting notifications by chat ID: %w", err)
+	}
+
+	return notifications, nil
+}

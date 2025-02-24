@@ -34,6 +34,8 @@ func NewBot(token string, verbose bool, dbCnn *db.Connection) (*Bot, error) {
 func (b *Bot) SendMessage(chatID int64, text string) error {
 	msg := tgbotapi.NewMessage(chatID, text)
 
+	msg.ParseMode = tgbotapi.ModeMarkdown
+
 	_, err := b.Send(msg)
 	if err != nil {
 		return fmt.Errorf("sending message: %w", err)

@@ -11,6 +11,7 @@ import (
 	"github.com/tecnologer/wheatley/pkg/dao"
 	"github.com/tecnologer/wheatley/pkg/models"
 	"github.com/tecnologer/wheatley/pkg/telegram"
+	"github.com/tecnologer/wheatley/pkg/telegram/commands"
 	"github.com/tecnologer/wheatley/pkg/twitch"
 	"github.com/tecnologer/wheatley/pkg/utils/log"
 )
@@ -120,7 +121,7 @@ func (s *Scheduler) requireSendMessage(notification *models.Notification) bool {
 func (s *Scheduler) sendMessage(stream *api.Stream, notification *models.Notification) {
 	err := s.TelegramBot.SendMessage(
 		notification.TelegramChatID,
-		fmt.Sprintf("Streamer https://twitch.tv/%s is streaming %s with %d viewers", stream.UserDisplayName, stream.GameName, stream.ViewerCount),
+		s.buildMessage(stream),
 	)
 	if err != nil {
 		log.Errorf("sending message for online streamer %s: %v", notification.TwitchStreamerName, err)
@@ -129,4 +130,21 @@ func (s *Scheduler) sendMessage(stream *api.Stream, notification *models.Notific
 	notification.LastNotification = time.Now()
 
 	s.updateNotification(notification)
+}
+
+func (s *Scheduler) buildMessage(stream *api.Stream) string {
+	if stream.ViewerCount > 0 {
+		return fmt.Sprintf(
+			"%s is streaming %s with %d viewers",
+			commands.MakeMarkdownLinkUser(stream.UserDisplayName),
+			stream.GameName,
+			stream.ViewerCount,
+		)
+	}
+
+	return fmt.Sprintf(
+		"%s just started streaming %s",
+		commands.MakeMarkdownLinkUser(stream.UserDisplayName),
+		stream.GameName,
+	)
 }
