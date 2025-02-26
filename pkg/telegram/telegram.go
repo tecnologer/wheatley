@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"fmt"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
@@ -76,10 +77,19 @@ func (b *Bot) ExecCommand(update tgbotapi.Update) string {
 		return ""
 	}
 
-	cmdName, args := message.ExtractCommand(inputMsg)
+	cmdName, args := b.extractCommand(inputMsg)
 	if cmdName == "" {
 		return ""
 	}
 
 	return b.commands.Execute(cmdName, update, args...)
+}
+
+func (b *Bot) extractCommand(inputMsg string) (string, []string) {
+	cmdName, args := message.ExtractCommand(inputMsg)
+	if cmdName == "" {
+		return "", nil
+	}
+
+	return strings.ReplaceAll(cmdName, "@"+b.Self.UserName, ""), args
 }
