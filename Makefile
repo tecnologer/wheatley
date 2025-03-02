@@ -15,15 +15,27 @@ run:
 build-docker:
 	docker build -t $(CONTAINER_NAME):$(VERSION) .
 
-deploy-docker: build-docker
-	docker cp $(CONTAINER_NAME):/wheatley/wheatley.db ./wheatley.db
-	docker stop $(CONTAINER_NAME) || true
-	docker rm $(CONTAINER_NAME) || true
+run-docker:
+	@docker ps -a --format "{{.Names}}" | grep -w $(CONTAINER_NAME) > /dev/null 2>&1; \
+	if [ $$? -eq 0 ]; then \
+		docker cp $(CONTAINER_NAME):/wheatley/wheatley.db ./wheatley.db; \
+		docker stop $(CONTAINER_NAME) || true; \
+		docker rm $(CONTAINER_NAME) || true; \
+	fi
+
 	docker run --env-file .env --name $(CONTAINER_NAME) -d --restart unless-stopped $(CONTAINER_NAME):$(VERSION)
+
+load-image:
+	docker load -i $(CONTAINER_NAME)_$(VERSION)_arm64.tar
 
 scp:
 	scp ./Makefile $(DESTINATION):$(DESTINATION_PATH)
-	scp go.mod $(DESTINATION):$(DESTINATION_PATH)
-	scp go.sum $(DESTINATION):$(DESTINATION_PATH)
-	scp -r ./cmd $(DESTINATION):$(DESTINATION_PATH)
-	scp -r ./pkg $(DESTINATION):$(DESTINATION_PATH)
+	scp $(CONTAINER_NAME)_$(VERSION)_arm64.tar $(DESTINATION):$(DESTINATION_PATH)
+
+deploy-docker: load-image run-docker
+
+deploy-pi: dockerize scp
+
+dockerize:
+	docker buildx build --platform linux/arm64 -t $(CONTAINER_NAME):$(VERSION) --load .
+	docker save -o $(CONTAINER_NAME)_$(VERSION)_arm64.tar $(CONTAINER_NAME):$(VERSION)
