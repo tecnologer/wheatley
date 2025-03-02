@@ -1,0 +1,7 @@
+**
+!go.mod
+!go.sum
+!cmd/
+!pkg/
+pkg/**/*_test.go
+!./wheatley.db

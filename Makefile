@@ -2,7 +2,7 @@
 .PHONY: *
 
 CONTAINER_NAME=wheatley
-VERSION=dev
+VERSION=$(shell git describe --tags `git rev-list --tags --max-count=1`)
 DESTINATION=pi@192.168.0.162
 DESTINATION_PATH=/home/pi/wheatley/
 
@@ -39,3 +39,6 @@ deploy-pi: dockerize scp
 dockerize:
 	docker buildx build --platform linux/arm64 -t $(CONTAINER_NAME):$(VERSION) --load .
 	docker save -o $(CONTAINER_NAME)_$(VERSION)_arm64.tar $(CONTAINER_NAME):$(VERSION)
+
+version:
+	echo $(VERSION)
