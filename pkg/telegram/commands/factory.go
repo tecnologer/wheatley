@@ -17,10 +17,7 @@ const (
 	MsgStreamerRemoved = "Done! You won't receive notifications for `%s` anymore"
 )
 
-var (
-	ErrMissingStreamerName = fmt.Errorf("missing streamer name")
-	ErrMissingChatID       = fmt.Errorf("missing chat ID")
-)
+var ErrMissingChatID = fmt.Errorf("missing chat ID")
 
 func StartCmd() *Command {
 	return &Command{
@@ -31,7 +28,8 @@ func StartCmd() *Command {
 				WithCommand(cmd),
 			).SetMessage(
 				"Hello! I'm Wheatley, your Twitch notifications bot. To add a streamer to the list of notifications, "+
-					"use the command `/%s <streamer_name>` or /%s.",
+					"use the command `/%s <streamer_name>` or /%s."+
+					"\n\n Source code on [GitHub](https://github.com/tecnologer/wheatley), Need more help? Contact @tecnologer",
 				AddStreamerCmdName,
 				HelpCmdName,
 			)
