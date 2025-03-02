@@ -27,6 +27,7 @@ run-docker:
 
 load-image:
 	docker load -i $(CONTAINER_NAME)_$(VERSION)_arm64.tar
+	rm $(CONTAINER_NAME)_$(VERSION)_arm64.tar
 
 scp:
 	scp ./Makefile $(DESTINATION):$(DESTINATION_PATH)
