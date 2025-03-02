@@ -8,7 +8,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/tecnologer/wheatley/pkg/dao"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
-	"github.com/tecnologer/wheatley/pkg/models"
 	"github.com/tecnologer/wheatley/pkg/utils/log"
 	"github.com/tecnologer/wheatley/pkg/utils/message"
 )
@@ -28,7 +27,14 @@ func StartCmd() *Command {
 		Name:        Start,
 		Description: "Starts the bot",
 		Handler: func(cmd *Command, _ tgbotapi.Update, _ ...string) *Response {
-			return NewResponse(WithCommand(cmd)).SetMessage("Hello! I'm Wheatley, your Twitch notifications bot")
+			return NewResponse(
+				WithCommand(cmd),
+			).SetMessage(
+				"Hello! I'm Wheatley, your Twitch notifications bot. To add a streamer to the list of notifications, "+
+					"use the command `/%s <streamer_name>` or /%s.",
+				AddStreamerCmdName,
+				HelpCmdName,
+			)
 		},
 	}
 }
@@ -40,37 +46,19 @@ func AddStreamerCmd(db *db.Connection) *Command {
 	)
 
 	return &Command{
-		Name:        AddStreamer,
+		Name:        AddStreamerCmdName,
 		Description: "Add a streamer to the list of notifications. You will be notified when the streamer goes live.",
 		Help: func() string {
-			return fmt.Sprintf("Usage: /%s <streamer_name", AddStreamer)
+			return fmt.Sprintf("Usage: /%s <streamer_name", AddStreamerCmdName)
 		},
 		Handler: func(cmd *Command, update tgbotapi.Update, args ...string) *Response {
 			response := NewResponse(WithCommand(cmd))
 
-			if len(args) == 0 || args[0] == "" {
-				log.Errorf("getting streamer name: %v", ErrMissingStreamerName)
-
-				return response.SetMissingArgs("Missing streamer name")
-			}
-
-			chatID := message.GetChatIDFromUpdate(update)
-			if chatID == 0 {
-				log.Errorf("getting chat ID from update: %v", ErrMissingChatID)
-
-				return response.SetMissingArgs("Missing chat ID")
-			}
-
-			argsMapped, err := message.ArgsToMap(args, argsOrder)
+			notification, err := buildNotificationFromUpdate(update, args, argsOrder)
 			if err != nil {
-				log.Errorf("parsing arguments: %v", err)
+				log.Errorf("error adding streamer: %v", err)
 
-				return response.SetMissingArgs("the arguments are not valid")
-			}
-
-			notification := &models.Notification{
-				TwitchStreamerName: argsMapped["name"],
-				TelegramChatID:     chatID,
+				return response.SetError("Error adding streamer: %v", err)
 			}
 
 			err = daoNotif.CreateNotification(notification)
@@ -82,6 +70,7 @@ func AddStreamerCmd(db *db.Connection) *Command {
 
 			return response.SetMessage(MsgStreamerAdded, notification.TwitchStreamerName)
 		},
+		AdminNotification: notifyAdminAddedStreamer,
 	}
 }
 
@@ -92,37 +81,19 @@ func RemoveStreamerCmd(db *db.Connection) *Command {
 	)
 
 	return &Command{
-		Name:        RemoveStreamer,
+		Name:        RemoveStreamerCmdName,
 		Description: "Remove a streamer from the list. You won't receive notifications for this streamer anymore.",
 		Help: func() string {
-			return fmt.Sprintf("Usage: /%s <streamer_name>", RemoveStreamer)
+			return fmt.Sprintf("Usage: /%s <streamer_name>", RemoveStreamerCmdName)
 		},
 		Handler: func(cmd *Command, update tgbotapi.Update, args ...string) *Response {
 			response := NewResponse(WithCommand(cmd))
 
-			if len(args) == 0 || args[0] == "" {
-				log.Errorf("getting streamer name: %v", ErrMissingStreamerName)
-
-				return response.SetMissingArgs("Missing streamer name")
-			}
-
-			chatID := message.GetChatIDFromUpdate(update)
-			if chatID == 0 {
-				log.Errorf("getting chat ID from update: %v", ErrMissingChatID)
-
-				return response.SetMissingArgs("Missing chat ID")
-			}
-
-			argsMapped, err := message.ArgsToMap(args, argsOrder)
+			notification, err := buildNotificationFromUpdate(update, args, argsOrder)
 			if err != nil {
-				log.Errorf("parsing arguments: %v", err)
+				log.Errorf("error removing streamer: %v", err)
 
-				return response.SetMissingArgs("the arguments are not valid")
-			}
-
-			notification := &models.Notification{
-				TwitchStreamerName: argsMapped["name"],
-				TelegramChatID:     chatID,
+				return response.SetError("Error removing streamer: %v", err)
 			}
 
 			err = daoNotif.DeleteNotification(notification)
@@ -134,6 +105,7 @@ func RemoveStreamerCmd(db *db.Connection) *Command {
 
 			return response.SetMessage(MsgStreamerRemoved, notification.TwitchStreamerName)
 		},
+		AdminNotification: notifyAdminRemovedStreamer,
 	}
 }
 
@@ -141,10 +113,10 @@ func HelpCmd(commands *Commands) *Command {
 	argsOrder := []string{"cmdName"}
 
 	return &Command{
-		Name:        Help,
+		Name:        HelpCmdName,
 		Description: "Shows the available commands and their usage.",
 		Help: func() string {
-			return fmt.Sprintf("Usage: /%s <command>", Help)
+			return fmt.Sprintf("Usage: /%s <command>", HelpCmdName)
 		},
 		Handler: func(cmd *Command, _ tgbotapi.Update, args ...string) *Response {
 			response := NewResponse(WithCommand(cmd))
@@ -190,7 +162,7 @@ func ListStreamersCmd(db *db.Connection) *Command {
 	daoNotif := dao.NewNotifications(db)
 
 	return &Command{
-		Name:        ListStreamers,
+		Name:        ListStreamersCmdName,
 		Description: "List the streamers you are subscribed to",
 		Handler: func(cmd *Command, update tgbotapi.Update, _ ...string) *Response {
 			response := NewResponse(WithCommand(cmd))

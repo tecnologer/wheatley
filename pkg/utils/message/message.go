@@ -1,6 +1,9 @@
 package message
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"strings"
+)
 
 func GetFromUpdate(update tgbotapi.Update) string {
 	if update.Message == nil && update.EditedMessage == nil {
@@ -24,4 +27,69 @@ func GetChatIDFromUpdate(update tgbotapi.Update) int64 {
 	}
 
 	return update.Message.Chat.ID
+}
+
+func GetChatNameFromUpdate(update tgbotapi.Update) string {
+	if update.Message == nil && update.EditedMessage == nil {
+		return ""
+	}
+
+	if update.Message != nil && update.Message.Chat != nil {
+		if update.Message.Chat.UserName != "" {
+			return update.Message.Chat.UserName
+		}
+
+		return update.Message.Chat.Title
+	}
+
+	if update.EditedMessage != nil && update.EditedMessage.Chat != nil {
+		if update.EditedMessage.Chat.UserName != "" {
+			return update.EditedMessage.Chat.UserName
+		}
+
+		return update.EditedMessage.Chat.Title
+	}
+
+	return "<<no defined>>"
+}
+
+func IsBot(update tgbotapi.Update) bool {
+	if update.Message == nil && update.EditedMessage == nil {
+		return false
+	}
+
+	if update.Message != nil && update.Message.From != nil {
+		return update.Message.From.IsBot
+	}
+
+	if update.EditedMessage != nil && update.EditedMessage.From != nil {
+		return update.EditedMessage.From.IsBot
+	}
+
+	return false
+}
+
+func SenderName(update tgbotapi.Update) string {
+	if update.Message == nil && update.EditedMessage == nil {
+		return ""
+	}
+
+	if update.Message != nil && update.Message.From != nil {
+		return update.Message.From.UserName
+	}
+
+	return update.EditedMessage.From.UserName
+}
+
+// SentByAdmin returns true if the message was sent by an admin
+func SentByAdmin(update tgbotapi.Update, admins []string) bool {
+	author := SenderName(update)
+
+	for _, admin := range admins {
+		if strings.EqualFold(author, admin) {
+			return true
+		}
+	}
+
+	return false
 }

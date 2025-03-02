@@ -44,6 +44,8 @@ func (c *CLI) setupApp(versionValue string) {
 			flags.TwitchClientID(),
 			flags.TwitchClientSecret(),
 			flags.ResendInterval(),
+			flags.TelegramAdminChatID(),
+			flags.TelegramAdmins(),
 		},
 		EnableBashCompletion: true,
 	}
@@ -81,7 +83,13 @@ func (c *CLI) run(ctx *cli.Context) error {
 
 	log.Infof("creating telegram bot")
 
-	c.bot, err = telegram.NewBot(ctx.String(flags.TelegramTokenFlagName), ctx.Bool(flags.VerboseFlagName), dbCnn)
+	c.bot, err = telegram.NewBot(&telegram.Config{
+		Token:     ctx.String(flags.TelegramTokenFlagName),
+		Verbose:   ctx.Bool(flags.VerboseFlagName),
+		DB:        dbCnn,
+		ChatAdmin: ctx.Int64(flags.TelegramAdminChatIDsFlagName),
+		Admins:    ctx.StringSlice(flags.TelegramAdminsFlagName),
+	})
 	if err != nil {
 		return fmt.Errorf("create telegram bot: %w", err)
 	}

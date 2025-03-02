@@ -72,9 +72,11 @@ func (s *Scheduler) taskTwitchCheckStreamers() {
 			continue
 		}
 
-		if stream == nil || s.TelegramBot == nil || !s.requireSendMessage(notification) {
+		if stream == nil || s.TelegramBot == nil || !s.requireSendMessage(notification, stream.GameName) {
 			continue
 		}
+
+		notification.LastGame = stream.GameName
 
 		s.sendMessage(stream, notification)
 	}
@@ -110,12 +112,13 @@ func (s *Scheduler) updateNotification(notification *models.Notification) {
 	}
 }
 
-func (s *Scheduler) requireSendMessage(notification *models.Notification) bool {
+func (s *Scheduler) requireSendMessage(notification *models.Notification, currentGame string) bool {
 	if notification.LastNotification.IsZero() {
 		return true
 	}
 
-	return time.Since(notification.LastNotification) >= time.Duration(s.NotificationDelayHours)*time.Hour
+	return time.Since(notification.LastNotification) >= time.Duration(s.NotificationDelayHours)*time.Hour ||
+		notification.LastGame != currentGame
 }
 
 func (s *Scheduler) sendMessage(stream *api.Stream, notification *models.Notification) {
@@ -133,9 +136,18 @@ func (s *Scheduler) sendMessage(stream *api.Stream, notification *models.Notific
 }
 
 func (s *Scheduler) buildMessage(stream *api.Stream) string {
-	if stream.ViewerCount > 0 {
+	if stream.ViewerCount > 1 {
 		return fmt.Sprintf(
 			"%s is streaming %s with %d viewers",
+			commands.MakeMarkdownLinkUser(stream.UserDisplayName),
+			stream.GameName,
+			stream.ViewerCount,
+		)
+	}
+
+	if stream.ViewerCount == 1 {
+		return fmt.Sprintf(
+			"%s is streaming %s with %d viewer",
 			commands.MakeMarkdownLinkUser(stream.UserDisplayName),
 			stream.GameName,
 			stream.ViewerCount,

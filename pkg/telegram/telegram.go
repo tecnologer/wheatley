@@ -11,24 +11,49 @@ import (
 	"github.com/tecnologer/wheatley/pkg/utils/message"
 )
 
+type Config struct {
+	Token     string
+	Verbose   bool
+	DB        *db.Connection
+	ChatAdmin int64
+	Admins    []string
+}
+
+func (c *Config) String() string {
+	if c == nil {
+		return "<<no config>>"
+	}
+
+	var token string
+	if len(c.Token) > 5 {
+		token = c.Token[:5]
+	}
+
+	return fmt.Sprintf("Token: ...%s, Verbose: %t, ChatAdmin: %d, Admins: %v", token, c.Verbose, c.ChatAdmin, c.Admins)
+}
+
 type Bot struct {
+	*Config
 	*tgbotapi.BotAPI
 	commands *commands.Commands
 }
 
-func NewBot(token string, verbose bool, dbCnn *db.Connection) (*Bot, error) {
-	bot, err := tgbotapi.NewBotAPI(token)
+func NewBot(config *Config) (*Bot, error) {
+	log.Infof("creating bot with config: %s", config)
+
+	bot, err := tgbotapi.NewBotAPI(config.Token)
 	if err != nil {
 		return nil, fmt.Errorf("creating bot: %w", err)
 	}
 
-	bot.Debug = verbose
+	bot.Debug = config.Verbose
 
 	log.Infof("authorized on account %s", bot.Self.UserName)
 
 	return &Bot{
+		Config:   config,
 		BotAPI:   bot,
-		commands: commands.NewCommands(dbCnn),
+		commands: commands.NewCommands(config.DB),
 	}, nil
 }
 
@@ -66,6 +91,8 @@ func (b *Bot) ReadUpdates() error {
 		if err != nil {
 			log.Errorf("sending message: %v", err)
 		}
+
+		go b.NotifyAdminIfNecessary(update)
 	}
 
 	return nil
@@ -92,4 +119,29 @@ func (b *Bot) extractCommand(inputMsg string) (string, []string) {
 	}
 
 	return strings.ReplaceAll(cmdName, "@"+b.Self.UserName, ""), args
+}
+
+func (b *Bot) NotifyAdminIfNecessary(update tgbotapi.Update) {
+	cmdName, args := b.extractCommand(message.GetFromUpdate(update))
+	if cmdName == "" {
+		return
+	}
+
+	if !b.shouldNotifyAdminChat(update, cmdName) {
+		return
+	}
+
+	res := b.commands.AdminNotification(cmdName, update, args...)
+
+	err := b.SendMessage(b.ChatAdmin, res.Message())
+	if err != nil {
+		log.Errorf("sending message to admin: %v", err)
+	}
+}
+
+func (b *Bot) shouldNotifyAdminChat(update tgbotapi.Update, cmdName string) bool {
+	return b.ChatAdmin != 0 && // if the admin chat is defined
+		message.GetChatIDFromUpdate(update) != b.ChatAdmin && // if the chat is not the admin chat
+		!message.SentByAdmin(update, b.Admins) && // if the author message is not an admin
+		b.commands.HasAdminNotification(cmdName) // if the command has an admin notification
 }

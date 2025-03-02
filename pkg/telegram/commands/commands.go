@@ -6,8 +6,9 @@ import (
 )
 
 type (
-	CommandHandler func(cmd *Command, update tgbotapi.Update, args ...string) *Response
-	HelpHandler    func() string
+	CommandHandler           func(cmd *Command, update tgbotapi.Update, args ...string) *Response
+	AdminNotificationHandler func(cmd *Command, update tgbotapi.Update, args ...string) *Response
+	HelpHandler              func() string
 )
 
 type Commands struct {
@@ -20,6 +21,7 @@ func NewCommands(dbCnn *db.Connection) *Commands {
 	}
 
 	commands.Add(
+		StartCmd(),
 		AddStreamerCmd(dbCnn),
 		RemoveStreamerCmd(dbCnn),
 		HelpCmd(commands),
@@ -79,11 +81,32 @@ func (c *Commands) Help(cmdName string) string {
 	return c.Map[cmd].Help()
 }
 
+func (c *Commands) HasAdminNotification(cmdName string) bool {
+	cmd := CommandName(cmdName)
+
+	if !c.IsRegistered(cmd) {
+		return false
+	}
+
+	return c.Map[cmd].AdminNotification != nil
+}
+
+func (c *Commands) AdminNotification(cmdName string, update tgbotapi.Update, args ...string) *Response {
+	cmd := CommandName(cmdName)
+
+	if !c.HasAdminNotification(cmdName) {
+		return nil
+	}
+
+	return c.Map[cmd].AdminNotification(c.Map[cmd], update, args...)
+}
+
 type Command struct {
-	Name        CommandName
-	Description string
-	Handler     CommandHandler
-	Help        HelpHandler
+	Name              CommandName
+	Description       string
+	Handler           CommandHandler
+	Help              HelpHandler
+	AdminNotification AdminNotificationHandler
 }
 
 func (c *Command) HasHelp() bool {
