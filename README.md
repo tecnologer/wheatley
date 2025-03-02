@@ -1,8 +1,11 @@
 # Wheatley
 
-![Wheatley, from Portal 2][1]
+[![codecov](https://codecov.io/gh/tecnologer/wheatley/branch/main/graph/badge.svg)](https://codecov.io/gh/username/repository)
 
 Wheatley is a telegram bot that notifies when a twitch streamer is online.
+
+![Wheatley, from Portal 2][1]
+
 
 You can use it on Telegram by adding the bot [@TwitchNotificationsMxBot](https://t.me/@TwitchNotificationsMxBot).
 
