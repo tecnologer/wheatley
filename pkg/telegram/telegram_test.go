@@ -127,7 +127,6 @@ func TestBot_NotifyAdminIfNecessary(t *testing.T) {
 
 		bot.NotifyAdminIfNecessary(messageUpdateCmdAdd(t))
 	})
-
 }
 
 func messageUpdateCmdAdd(t *testing.T) tgbotapi.Update {
