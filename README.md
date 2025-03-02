@@ -1,6 +1,6 @@
 # Wheatley
 
-[![codecov](https://codecov.io/gh/tecnologer/wheatley/branch/main/graph/badge.svg)](https://codecov.io/gh/username/repository)
+[![codecov](https://codecov.io/gh/tecnologer/wheatley/graph/badge.svg?token=4FBM21AOBC)](https://codecov.io/gh/tecnologer/wheatley)
 
 Wheatley is a telegram bot that notifies when a twitch streamer is online.
 
