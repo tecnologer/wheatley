@@ -54,6 +54,64 @@ func TestExtractCommand(t *testing.T) {
 	}
 }
 
+func TestExtractCommandNamedBot(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		message  string
+		botName  string
+		wantCmd  string
+		wantArgs []string
+	}{
+		{
+			name:     "empty_message",
+			message:  "",
+			botName:  "bot",
+			wantCmd:  "",
+			wantArgs: nil,
+		},
+		{
+			name:     "no_command",
+			message:  "hello",
+			botName:  "bot",
+			wantCmd:  "",
+			wantArgs: nil,
+		},
+		{
+			name:     "command_no_args",
+			message:  "/start",
+			botName:  "bot",
+			wantCmd:  "start",
+			wantArgs: nil,
+		},
+		{
+			name:     "command_with_args",
+			message:  "/echo hello world",
+			botName:  "bot",
+			wantCmd:  "echo",
+			wantArgs: []string{"hello", "world"},
+		},
+		{
+			name:     "command_with_bot_name",
+			message:  "/echo@bot hello world",
+			botName:  "bot",
+			wantCmd:  "echo",
+			wantArgs: []string{"hello", "world"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotCmd, gotArgs := message.ExtractCommandNamedBot(test.message, test.botName)
+			assert.Equal(t, test.wantCmd, gotCmd)
+			assert.Equal(t, test.wantArgs, gotArgs)
+		})
+	}
+}
+
 func TestExtractValueFromArg(t *testing.T) { //nolint:funlen
 	t.Parallel()
 
@@ -111,6 +169,59 @@ func TestExtractValueFromArg(t *testing.T) { //nolint:funlen
 			wantArgName:  "key",
 			wantArgValue: "value",
 		},
+		{
+			name:         "arg_with_colon_no_value",
+			arg:          "key:",
+			wantArgName:  "key",
+			wantArgValue: "",
+		},
+		{
+			name:        "arg_with_equal_no_value",
+			arg:         "key=",
+			wantArgName: "key",
+		},
+		{
+			name:         "arg_with_colon_no_key",
+			arg:          ":value",
+			wantArgName:  "",
+			wantArgValue: "value",
+		},
+		{
+			name:         "arg_with_equal_no_key",
+			arg:          "=value",
+			wantArgName:  "",
+			wantArgValue: "value",
+		},
+		{
+			name:         "arg_with_colon_no_key_no_value",
+			arg:          ":",
+			wantArgName:  "",
+			wantArgValue: "",
+		},
+		{
+			name:         "arg_with_equal_no_key_no_value",
+			arg:          "=",
+			wantArgName:  "",
+			wantArgValue: "",
+		},
+		{
+			name:         "many_colons_values",
+			arg:          "key:value:another:value",
+			wantArgName:  "key",
+			wantArgValue: "value:another:value",
+		},
+		{
+			name:         "many_equals_values",
+			arg:          "key=value=another=value",
+			wantArgName:  "key",
+			wantArgValue: "value=another=value",
+		},
+		{
+			name:         "only_value",
+			arg:          "value",
+			wantArgName:  "value",
+			wantArgValue: "",
+		},
 	}
 
 	for _, test := range tests {
@@ -118,8 +229,8 @@ func TestExtractValueFromArg(t *testing.T) { //nolint:funlen
 			t.Parallel()
 
 			argName, argValue := message.ExtractValueFromArg(test.arg)
-			assert.Equal(t, test.wantArgName, argName)
-			assert.Equal(t, test.wantArgValue, argValue)
+			assert.Equal(t, test.wantArgName, argName, "Argument name")
+			assert.Equal(t, test.wantArgValue, argValue, "Argument value")
 		})
 	}
 }

@@ -18,9 +18,9 @@ func notifyAdminAddedStreamer(cmd *Command, update tgbotapi.Update, args ...stri
 	msg.WriteString("The ")
 
 	if message.IsBot(update) {
-		msg.WriteString("bot ")
+		msg.WriteString("bot @")
 	} else {
-		msg.WriteString("user ")
+		msg.WriteString("user @")
 	}
 
 	msg.WriteString(message.SenderName(update))
@@ -43,7 +43,7 @@ func notifyAdminRemovedStreamer(cmd *Command, update tgbotapi.Update, args ...st
 	msg.WriteString("The ")
 
 	if message.IsBot(update) {
-		msg.WriteString("bot ")
+		msg.WriteString("bot @")
 	} else {
 		msg.WriteString("user @")
 	}

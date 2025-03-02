@@ -28,6 +28,15 @@ func ExtractCommand(message string) (string, []string) {
 	return message[1:], nil
 }
 
+func ExtractCommandNamedBot(message string, botName string) (string, []string) {
+	cmd, args := ExtractCommand(message)
+	if cmd == "" {
+		return "", nil
+	}
+
+	return strings.ReplaceAll(cmd, "@"+botName, ""), args
+}
+
 // IsCommand checks if a message is a command.
 // A command is a message that starts with a `/`.
 func IsCommand(message string) bool {
@@ -84,15 +93,8 @@ func ExtractValueFromArg(arg string) (string, string) {
 	separatorRegEx := regexp.MustCompile(`^([^:=]*)([=:](.*))?`)
 
 	chunks := separatorRegEx.FindStringSubmatch(arg)
-	if len(chunks) == 2 {
-		return strings.TrimSpace(chunks[1]), ""
-	}
 
-	if len(chunks) == 4 {
-		return strings.TrimSpace(chunks[1]), strings.TrimSpace(chunks[3])
-	}
-
-	return arg, ""
+	return strings.TrimSpace(chunks[1]), strings.TrimSpace(chunks[3])
 }
 
 // ArgsToMap converts a slice of arguments to a map.

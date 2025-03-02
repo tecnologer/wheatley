@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"fmt"
-	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
@@ -11,12 +10,27 @@ import (
 	"github.com/tecnologer/wheatley/pkg/utils/message"
 )
 
+type BotAPI interface {
+	Send(c tgbotapi.Chattable) (tgbotapi.Message, error)
+	GetUpdatesChan(config tgbotapi.UpdateConfig) tgbotapi.UpdatesChannel
+	Self() tgbotapi.User
+}
+
+type BotAPIImpl struct {
+	*tgbotapi.BotAPI
+}
+
+func (b *BotAPIImpl) Self() tgbotapi.User {
+	return b.BotAPI.Self
+}
+
 type Config struct {
 	Token     string
 	Verbose   bool
 	DB        *db.Connection
 	ChatAdmin int64
 	Admins    []string
+	IsMock    bool
 }
 
 func (c *Config) String() string {
@@ -32,27 +46,53 @@ func (c *Config) String() string {
 	return fmt.Sprintf("Token: ...%s, Verbose: %t, ChatAdmin: %d, Admins: %v", token, c.Verbose, c.ChatAdmin, c.Admins)
 }
 
+func (c *Config) OK() error {
+	if c == nil {
+		return fmt.Errorf("config is nil")
+	}
+
+	if c.Token == "" {
+		return fmt.Errorf("missing token")
+	}
+
+	if !c.IsMock && c.DB == nil {
+		return fmt.Errorf("missing database connection")
+	}
+
+	return nil
+}
+
 type Bot struct {
 	*Config
-	*tgbotapi.BotAPI
+	Bot      BotAPI
 	commands *commands.Commands
 }
 
 func NewBot(config *Config) (*Bot, error) {
-	log.Infof("creating bot with config: %s", config)
-
-	bot, err := tgbotapi.NewBotAPI(config.Token)
-	if err != nil {
-		return nil, fmt.Errorf("creating bot: %w", err)
+	if err := config.OK(); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
-	bot.Debug = config.Verbose
+	log.Infof("creating bot with config: %s", config)
 
-	log.Infof("authorized on account %s", bot.Self.UserName)
+	bot := BotAPI(&Mock{})
+
+	if !config.IsMock {
+		tBot, err := tgbotapi.NewBotAPI(config.Token)
+		if err != nil {
+			return nil, fmt.Errorf("creating bot: %w", err)
+		}
+
+		tBot.Debug = config.Verbose
+
+		bot = &BotAPIImpl{tBot}
+	}
+
+	log.Infof("authorized on account %s", bot.Self().UserName)
 
 	return &Bot{
 		Config:   config,
-		BotAPI:   bot,
+		Bot:      bot,
 		commands: commands.NewCommands(config.DB),
 	}, nil
 }
@@ -62,7 +102,7 @@ func (b *Bot) SendMessage(chatID int64, text string) error {
 
 	msg.ParseMode = tgbotapi.ModeMarkdown
 
-	_, err := b.Send(msg)
+	_, err := b.Bot.Send(msg)
 	if err != nil {
 		return fmt.Errorf("sending message: %w", err)
 	}
@@ -79,18 +119,24 @@ func (b *Bot) ReadUpdates() error {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates := b.GetUpdatesChan(u)
+	updates := b.Bot.GetUpdatesChan(u)
 
 	for update := range updates {
+		log.Info("received update")
+
 		msg = b.ExecCommand(update)
 		if msg == "" {
 			continue
 		}
 
+		log.Infof("received message: %s", msg)
+
 		err = b.SendMessage(message.GetChatIDFromUpdate(update), msg)
 		if err != nil {
 			log.Errorf("sending message: %v", err)
 		}
+
+		log.Info("message sent")
 
 		go b.NotifyAdminIfNecessary(update)
 	}
@@ -104,7 +150,7 @@ func (b *Bot) ExecCommand(update tgbotapi.Update) string {
 		return ""
 	}
 
-	cmdName, args := b.extractCommand(inputMsg)
+	cmdName, args := message.ExtractCommandNamedBot(inputMsg, b.Bot.Self().UserName)
 	if cmdName == "" {
 		return ""
 	}
@@ -112,24 +158,21 @@ func (b *Bot) ExecCommand(update tgbotapi.Update) string {
 	return b.commands.Execute(cmdName, update, args...)
 }
 
-func (b *Bot) extractCommand(inputMsg string) (string, []string) {
-	cmdName, args := message.ExtractCommand(inputMsg)
-	if cmdName == "" {
-		return "", nil
-	}
-
-	return strings.ReplaceAll(cmdName, "@"+b.Self.UserName, ""), args
-}
-
 func (b *Bot) NotifyAdminIfNecessary(update tgbotapi.Update) {
-	cmdName, args := b.extractCommand(message.GetFromUpdate(update))
+	log.Infof("notifyAdminIfNecessary update")
+
+	cmdName, args := message.ExtractCommandNamedBot(message.GetFromUpdate(update), b.Bot.Self().UserName)
 	if cmdName == "" {
 		return
 	}
+
+	log.Infof("notifyAdminIfNecessary command: %s", cmdName)
 
 	if !b.shouldNotifyAdminChat(update, cmdName) {
 		return
 	}
+
+	log.Infof("notifyAdminIfNecessary should notify admin")
 
 	res := b.commands.AdminNotification(cmdName, update, args...)
 

@@ -25,8 +25,11 @@ func buildCmdHelpMessage(commands *Commands, cmdName CommandName) string {
 	helpMsg.WriteString(string(command.Name))
 	helpMsg.WriteString(": ")
 	helpMsg.WriteString(command.Description)
-	helpMsg.WriteString("\n\n")
-	helpMsg.WriteString(command.Help())
+
+	if command.Help != nil {
+		helpMsg.WriteString("\n\n")
+		helpMsg.WriteString(command.Help())
+	}
 
 	return helpMsg.String()
 }

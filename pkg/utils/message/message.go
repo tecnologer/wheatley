@@ -23,16 +23,20 @@ func GetChatIDFromUpdate(update tgbotapi.Update) int64 {
 		return 0
 	}
 
-	if update.Message == nil && update.EditedMessage != nil {
+	if update.Message != nil && update.Message.Chat != nil {
+		return update.Message.Chat.ID
+	}
+
+	if update.EditedMessage != nil && update.EditedMessage.Chat != nil {
 		return update.EditedMessage.Chat.ID
 	}
 
-	return update.Message.Chat.ID
+	return 0
 }
 
 func GetChatNameFromUpdate(update tgbotapi.Update) string {
 	if update.Message == nil && update.EditedMessage == nil {
-		return ""
+		return "<<no defined>>"
 	}
 
 	if update.Message != nil && update.Message.Chat != nil {
@@ -79,7 +83,11 @@ func SenderName(update tgbotapi.Update) string {
 		return update.Message.From.UserName
 	}
 
-	return update.EditedMessage.From.UserName
+	if update.EditedMessage != nil && update.EditedMessage.From != nil {
+		return update.EditedMessage.From.UserName
+	}
+
+	return ""
 }
 
 // SentByAdmin returns true if the message was sent by an admin

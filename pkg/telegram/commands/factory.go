@@ -21,8 +21,8 @@ var ErrMissingChatID = fmt.Errorf("missing chat ID")
 
 func StartCmd() *Command {
 	return &Command{
-		Name:        Start,
-		Description: "Starts the bot",
+		Name:        StartCmdName,
+		Description: "Starts the bot.",
 		Handler: func(cmd *Command, _ tgbotapi.Update, _ ...string) *Response {
 			return NewResponse(
 				WithCommand(cmd),
@@ -40,14 +40,14 @@ func StartCmd() *Command {
 func AddStreamerCmd(db *db.Connection) *Command {
 	var (
 		argsOrder = []string{"name"}
-		daoNotif  = dao.NewNotifications(db)
+		daoNotif  = dao.NewNotificationsDAO(db)
 	)
 
 	return &Command{
 		Name:        AddStreamerCmdName,
-		Description: "Add a streamer to the list of notifications. You will be notified when the streamer goes live.",
+		Description: "Adds a streamer to the list of notifications. You will be notified when the streamer goes live.",
 		Help: func() string {
-			return fmt.Sprintf("Usage: /%s <streamer_name", AddStreamerCmdName)
+			return fmt.Sprintf("Usage: `/%s <streamer_name>`", AddStreamerCmdName)
 		},
 		Handler: func(cmd *Command, update tgbotapi.Update, args ...string) *Response {
 			response := NewResponse(WithCommand(cmd))
@@ -75,14 +75,14 @@ func AddStreamerCmd(db *db.Connection) *Command {
 func RemoveStreamerCmd(db *db.Connection) *Command {
 	var (
 		argsOrder = []string{"name"}
-		daoNotif  = dao.NewNotifications(db)
+		daoNotif  = dao.NewNotificationsDAO(db)
 	)
 
 	return &Command{
 		Name:        RemoveStreamerCmdName,
-		Description: "Remove a streamer from the list. You won't receive notifications for this streamer anymore.",
+		Description: "Removes a streamer from the list. You won't receive notifications for this streamer anymore.",
 		Help: func() string {
-			return fmt.Sprintf("Usage: /%s <streamer_name>", RemoveStreamerCmdName)
+			return fmt.Sprintf("Usage: `/%s <streamer_name>`", RemoveStreamerCmdName)
 		},
 		Handler: func(cmd *Command, update tgbotapi.Update, args ...string) *Response {
 			response := NewResponse(WithCommand(cmd))
@@ -114,7 +114,13 @@ func HelpCmd(commands *Commands) *Command {
 		Name:        HelpCmdName,
 		Description: "Shows the available commands and their usage.",
 		Help: func() string {
-			return fmt.Sprintf("Usage: /%s <command>", HelpCmdName)
+			return fmt.Sprintf(
+				"Usage: \n- All available commands /%s.\n- Help for specific command `/%s <command>`. For example: `/%s %s`",
+				HelpCmdName,
+				HelpCmdName,
+				HelpCmdName,
+				AddStreamerCmdName,
+			)
 		},
 		Handler: func(cmd *Command, _ tgbotapi.Update, args ...string) *Response {
 			response := NewResponse(WithCommand(cmd))
@@ -149,7 +155,14 @@ func HelpCmd(commands *Commands) *Command {
 			}
 
 			helpMsg.WriteString("\n")
-			helpMsg.WriteString("For more information about a specific command, use /help <command>. For example: /help add")
+			helpMsg.WriteString(
+				fmt.Sprintf(
+					"If you want get more information about a specific command, use `/%s <command>`. For example: `/%s %s`.",
+					HelpCmdName,
+					HelpCmdName,
+					AddStreamerCmdName,
+				),
+			)
 
 			return response.SetMessage(helpMsg.String())
 		},
@@ -157,11 +170,11 @@ func HelpCmd(commands *Commands) *Command {
 }
 
 func ListStreamersCmd(db *db.Connection) *Command {
-	daoNotif := dao.NewNotifications(db)
+	daoNotif := dao.NewNotificationsDAO(db)
 
 	return &Command{
 		Name:        ListStreamersCmdName,
-		Description: "List the streamers you are subscribed to",
+		Description: "Lists all the streamers you're currently following.",
 		Handler: func(cmd *Command, update tgbotapi.Update, _ ...string) *Response {
 			response := NewResponse(WithCommand(cmd))
 
