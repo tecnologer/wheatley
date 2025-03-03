@@ -9,6 +9,11 @@ import (
 
 var ErrNotFound = fmt.Errorf("stream not found")
 
+type API interface {
+	StreamByName(ctx context.Context, username string) (*api.Stream, error)
+	Token(ctx context.Context) (*Token, error)
+}
+
 type Config struct {
 	ClientID     string
 	ClientSecret string
@@ -28,7 +33,7 @@ func New(config *Config) *Twitch {
 }
 
 func (t *Twitch) StreamByName(ctx context.Context, username string) (*api.Stream, error) {
-	token, err := t.getToken(ctx)
+	token, err := t.Token(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get token: %w", err)
 	}
@@ -45,7 +50,7 @@ func (t *Twitch) StreamByName(ctx context.Context, username string) (*api.Stream
 	return &streams.Data[0], nil
 }
 
-func (t *Twitch) getToken(ctx context.Context) (*Token, error) {
+func (t *Twitch) Token(ctx context.Context) (*Token, error) {
 	if t.token.IsValid() {
 		return t.token, nil
 	}

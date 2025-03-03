@@ -20,7 +20,7 @@ type Config struct {
 	IntervalMinutes        int
 	NotificationDelayHours int
 	TwitchConfig           *twitch.Config
-	Notifications          *dao.Notifications
+	Notifications          dao.NotificationsDAO
 	Context                context.Context //nolint: containedctx // This is a context.Context that will be used to make requests to Twitch API
 	TelegramBot            *telegram.Bot
 }

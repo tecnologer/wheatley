@@ -7,8 +7,10 @@ import (
 
 type NotificationsDAO interface {
 	CreateNotification(notification *models.Notification) error
+	UpdateNotification(notification *models.Notification) error
 	DeleteNotification(notification *models.Notification) error
 	NotificationsByChatID(chatID int64) ([]*models.Notification, error)
+	AllNotifications() ([]*models.Notification, error)
 }
 
 func NewNotificationsDAO(db *db.Connection) NotificationsDAO {
@@ -25,6 +27,10 @@ func (n NotificationsMock) CreateNotification(_ *models.Notification) error {
 	return nil
 }
 
+func (n NotificationsMock) UpdateNotification(_ *models.Notification) error {
+	return nil
+}
+
 func (n NotificationsMock) DeleteNotification(_ *models.Notification) error {
 	return nil
 }
@@ -38,6 +44,19 @@ func (n NotificationsMock) NotificationsByChatID(chatID int64) ([]*models.Notifi
 		{
 			TwitchStreamerName: "another_streamer",
 			TelegramChatID:     chatID,
+		},
+	}, nil
+}
+
+func (n NotificationsMock) AllNotifications() ([]*models.Notification, error) {
+	return []*models.Notification{
+		{
+			TwitchStreamerName: "streamer_name",
+			TelegramChatID:     123456,
+		},
+		{
+			TwitchStreamerName: "another_streamer",
+			TelegramChatID:     123456,
 		},
 	}, nil
 }
