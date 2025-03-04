@@ -1,11 +1,8 @@
 package twitch
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"strings"
 	"time"
 )
@@ -22,37 +19,6 @@ type Token struct {
 
 func (t *Token) IsValid() bool {
 	return t != nil && time.Since(t.lastUpdate) < time.Duration(t.ExpiresIn)*time.Second
-}
-
-func (t *Token) Renew(ctx context.Context, clientID, clientSecret string) (*Token, error) {
-	clientID = strings.TrimSpace(clientID)
-	clientSecret = strings.TrimSpace(clientSecret)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, authTokenURL, formURLEncoded(clientID, clientSecret))
-	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
-	}
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("do request: %w", err)
-	}
-
-	defer res.Body.Close()
-
-	var token Token
-
-	if err := json.NewDecoder(res.Body).Decode(&token); err != nil {
-		return nil, fmt.Errorf("decode response: %w", err)
-	}
-
-	if token.HasError() {
-		return nil, fmt.Errorf("error response: Code: %d - %s", token.Status, token.Message)
-	}
-
-	token.lastUpdate = time.Now()
-
-	return &token, nil
 }
 
 func formURLEncoded(clientID, clientSecret string) io.Reader {

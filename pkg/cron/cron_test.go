@@ -1,28 +1,56 @@
-package cron
+package cron //nolint:testpackage // This package is internal and it's being tested by the scheduler_test.go file.
 
 import (
-	"github.com/go-co-op/gocron/v2"
-	"github.com/tecnologer/wheatley/pkg/twitch"
 	"testing"
+
+	"github.com/adeithe/go-twitch/api"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestScheduler_taskTwitchCheckStreamers(t *testing.T) {
+func TestScheduler_buildMessage(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name   string
-		fields fields
+		stream *api.Stream
+		want   string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "single_viewer",
+			stream: &api.Stream{
+				ViewerCount:     1,
+				UserDisplayName: "StreamerName",
+				GameName:        "GameName",
+			},
+			want: "[StreamerName](https://twitch.tv/StreamerName) is streaming GameName with a single viewer.",
+		},
+		{
+			name: "multiple_viewers",
+			stream: &api.Stream{
+				ViewerCount:     6,
+				UserDisplayName: "StreamerName",
+				GameName:        "GameName",
+			},
+			want: "[StreamerName](https://twitch.tv/StreamerName) is streaming GameName with 6 viewers.",
+		},
+		{
+			name: "no_viewers",
+			stream: &api.Stream{
+				ViewerCount:     0,
+				UserDisplayName: "StreamerName",
+				GameName:        "GameName",
+			},
+			want: "[StreamerName](https://twitch.tv/StreamerName) just started streaming GameName.",
+		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &Scheduler{
-				Scheduler: tt.fields.Scheduler,
-				Config:    tt.fields.Config,
-				twitch:    tt.fields.twitch,
-			}
-			s.taskTwitchCheckStreamers()
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			s := &Scheduler{}
+			got := s.buildMessage(test.stream)
+			assert.Equal(t, test.want, got)
 		})
 	}
 }

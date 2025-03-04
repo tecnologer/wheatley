@@ -28,7 +28,7 @@ type Config struct {
 type Scheduler struct {
 	gocron.Scheduler
 	*Config
-	twitch *twitch.Twitch
+	twitch twitch.API
 }
 
 func NewScheduler(config *Config) (*Scheduler, error) {
@@ -138,7 +138,7 @@ func (s *Scheduler) sendMessage(stream *api.Stream, notification *models.Notific
 func (s *Scheduler) buildMessage(stream *api.Stream) string {
 	if stream.ViewerCount > 1 {
 		return fmt.Sprintf(
-			"%s is streaming %s with %d viewers",
+			"%s is streaming %s with %d viewers.",
 			commands.MakeMarkdownLinkUser(stream.UserDisplayName),
 			stream.GameName,
 			stream.ViewerCount,
@@ -147,15 +147,14 @@ func (s *Scheduler) buildMessage(stream *api.Stream) string {
 
 	if stream.ViewerCount == 1 {
 		return fmt.Sprintf(
-			"%s is streaming %s with %d viewer",
+			"%s is streaming %s with a single viewer.",
 			commands.MakeMarkdownLinkUser(stream.UserDisplayName),
 			stream.GameName,
-			stream.ViewerCount,
 		)
 	}
 
 	return fmt.Sprintf(
-		"%s just started streaming %s",
+		"%s just started streaming %s.",
 		commands.MakeMarkdownLinkUser(stream.UserDisplayName),
 		stream.GameName,
 	)
