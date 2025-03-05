@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/tecnologer/wheatley/cmd/flags"
 	"github.com/tecnologer/wheatley/pkg/cron"
@@ -142,8 +143,8 @@ func (c *CLI) createConnection(ctx *cli.Context) (*db.Connection, error) {
 
 func (c *CLI) cronOptions(runCtx context.Context, ctx *cli.Context, dbCnn *db.Connection) *cron.Config {
 	return &cron.Config{
-		IntervalMinutes:        ctx.Int(flags.IntervalFlagName),
-		NotificationDelayHours: ctx.Int(flags.ResendIntervalFlagName),
+		SchedulerInterval: time.Duration(ctx.Int(flags.IntervalFlagName)) * time.Minute,
+		NotificationDelay: time.Duration(ctx.Int(flags.ResendIntervalFlagName)) * time.Hour,
 		TwitchConfig: &twitch.Config{
 			ClientID:     ctx.String(flags.TwitchClientIDFlagName),
 			ClientSecret: ctx.String(flags.TwitchClientSecretFlagName),

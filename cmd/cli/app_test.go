@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -183,9 +184,9 @@ func TestApp_cronOptions(t *testing.T) {
 	flagSet.String(flags.TelegramAdminsFlagName, "tester", "")
 
 	want := &cron.Config{
-		IntervalMinutes:        5,
-		NotificationDelayHours: 2,
-		Context:                context.Background(),
+		SchedulerInterval: 5 * time.Minute,
+		NotificationDelay: 2 * time.Hour,
+		Context:           context.Background(),
 		TwitchConfig: &twitch.Config{
 			ClientID:     "twitch_client",
 			ClientSecret: "twitch_secret",

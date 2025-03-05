@@ -17,12 +17,12 @@ import (
 )
 
 type Config struct {
-	IntervalMinutes        int
-	NotificationDelayHours int
-	TwitchConfig           *twitch.Config
-	Notifications          dao.NotificationsDAO
-	Context                context.Context //nolint: containedctx // This is a context.Context that will be used to make requests to Twitch API
-	TelegramBot            *telegram.Bot
+	SchedulerInterval time.Duration
+	NotificationDelay time.Duration
+	TwitchConfig      *twitch.Config
+	Notifications     dao.NotificationsDAO
+	Context           context.Context //nolint: containedctx // This is a context.Context that will be used to make requests to Twitch API
+	TelegramBot       *telegram.Bot
 }
 
 type Scheduler struct {
@@ -44,7 +44,7 @@ func NewScheduler(config *Config) (*Scheduler, error) {
 	}
 
 	_, err = scheduler.NewJob(
-		gocron.DurationJob(time.Duration(config.IntervalMinutes)*time.Minute),
+		gocron.DurationJob(config.SchedulerInterval),
 		gocron.NewTask(schedule.taskTwitchCheckStreamers),
 	)
 	if err != nil {
@@ -117,7 +117,7 @@ func (s *Scheduler) requireSendMessage(notification *models.Notification, curren
 		return true
 	}
 
-	return time.Since(notification.LastNotification) >= time.Duration(s.NotificationDelayHours)*time.Hour ||
+	return time.Since(notification.LastNotification) >= s.NotificationDelay ||
 		notification.LastGame != currentGame
 }
 
