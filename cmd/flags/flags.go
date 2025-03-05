@@ -6,30 +6,40 @@ import (
 )
 
 const (
-	VerboseFlagName              = "verbose"
-	DBPasswordFlagName           = "db-password"
-	DBNameFlagName               = "db-name"
-	TelegramTokenFlagName        = "telegram-token"
-	IntervalFlagName             = "interval"
-	ResendIntervalFlagName       = "resend-interval"
-	TwitchClientIDFlagName       = "twitch-client-id"
-	TwitchClientSecretFlagName   = "twitch-client-secret"
-	TelegramAdminChatIDsFlagName = "telegram-admin-chat-ids"
-	TelegramAdminsFlagName       = "telegram-admins"
+	VerboseFlagName               = "verbose"
+	VerboseFlagAlias              = "V"
+	DBPasswordFlagName            = "db-password"
+	DBPasswordFlagAlias           = "p"
+	DBNameFlagName                = "db-name"
+	DBNameFlagAlias               = "d"
+	TelegramTokenFlagName         = "telegram-token"
+	TelegramTokenFlagAlias        = "t"
+	IntervalFlagName              = "interval"
+	IntervalFlagAlias             = "i"
+	ResendIntervalFlagName        = "resend-interval"
+	ResendIntervalFlagAlias       = "r"
+	TwitchClientIDFlagName        = "twitch-client-id"
+	TwitchClientIDFlagAlias       = "c"
+	TwitchClientSecretFlagName    = "twitch-client-secret"
+	TwitchClientSecretFlagAlias   = "s"
+	TelegramAdminChatIDsFlagName  = "telegram-admin-chat-ids"
+	TelegramAdminChatIDsFlagAlias = "D"
+	TelegramAdminsFlagName        = "telegram-admins"
+	TelegramAdminsFlagAlias       = "a"
 )
 
 func Verbose() *cli.BoolFlag {
 	return &cli.BoolFlag{
 		Name:    VerboseFlagName,
 		Usage:   "Enable verbose output.",
-		Aliases: []string{"V"},
+		Aliases: []string{VerboseFlagAlias},
 	}
 }
 
 func DBPassword() *cli.StringFlag {
 	return &cli.StringFlag{
 		Name:     DBPasswordFlagName,
-		Aliases:  []string{"p"},
+		Aliases:  []string{DBPasswordFlagAlias},
 		Usage:    "Database password.",
 		Required: false,
 	}
@@ -38,7 +48,7 @@ func DBPassword() *cli.StringFlag {
 func DBName() *cli.StringFlag {
 	return &cli.StringFlag{
 		Name:     DBNameFlagName,
-		Aliases:  []string{"d"},
+		Aliases:  []string{DBNameFlagAlias},
 		Usage:    "Database name.",
 		Required: true,
 		EnvVars:  []string{envvarname.DBName},
@@ -48,7 +58,7 @@ func DBName() *cli.StringFlag {
 func TelegramToken() *cli.StringFlag {
 	return &cli.StringFlag{
 		Name:     TelegramTokenFlagName,
-		Aliases:  []string{"t"},
+		Aliases:  []string{TelegramTokenFlagAlias},
 		Usage:    "Telegram bot token.",
 		Required: true,
 		EnvVars:  []string{envvarname.TelegramBotToken},
@@ -58,7 +68,7 @@ func TelegramToken() *cli.StringFlag {
 func Interval() *cli.IntFlag {
 	return &cli.IntFlag{
 		Name:    IntervalFlagName,
-		Aliases: []string{"i"},
+		Aliases: []string{IntervalFlagAlias},
 		Usage:   "Interval in minutes to check if a streamer is live.",
 		Value:   1,
 		EnvVars: []string{envvarname.Interval},
@@ -68,7 +78,7 @@ func Interval() *cli.IntFlag {
 func TwitchClientID() *cli.StringFlag {
 	return &cli.StringFlag{
 		Name:    TwitchClientIDFlagName,
-		Aliases: []string{"c"},
+		Aliases: []string{TwitchClientIDFlagAlias},
 		Usage:   "Twitch client ID.",
 		EnvVars: []string{envvarname.TwitchClientID},
 	}
@@ -77,7 +87,7 @@ func TwitchClientID() *cli.StringFlag {
 func TwitchClientSecret() *cli.StringFlag {
 	return &cli.StringFlag{
 		Name:    TwitchClientSecretFlagName,
-		Aliases: []string{"s"},
+		Aliases: []string{TwitchClientSecretFlagAlias},
 		Usage:   "Twitch client secret.",
 		EnvVars: []string{envvarname.TwitchClientSecret},
 	}
@@ -86,7 +96,7 @@ func TwitchClientSecret() *cli.StringFlag {
 func ResendInterval() *cli.IntFlag {
 	return &cli.IntFlag{
 		Name:    ResendIntervalFlagName,
-		Aliases: []string{"r"},
+		Aliases: []string{ResendIntervalFlagAlias},
 		Usage:   "Interval in hours to resend a notification.",
 		Value:   6,
 		EnvVars: []string{envvarname.ResendInterval},
@@ -97,7 +107,7 @@ func TelegramAdminChatID() *cli.Int64Flag {
 	return &cli.Int64Flag{
 		Name:    TelegramAdminChatIDsFlagName,
 		Usage:   "The main Telegram chat ID of the admin.",
-		Aliases: []string{"D"},
+		Aliases: []string{TelegramAdminChatIDsFlagAlias},
 		Value:   10244644, // Default chat ID for the bot and the owner
 		EnvVars: []string{envvarname.TelegramAdminChatIDs},
 	}
@@ -107,7 +117,7 @@ func TelegramAdmins() *cli.StringSliceFlag {
 	return &cli.StringSliceFlag{
 		Name:    TelegramAdminsFlagName,
 		Usage:   "The telegram username of the admins.",
-		Aliases: []string{"a"},
+		Aliases: []string{TelegramAdminsFlagAlias},
 		Value:   cli.NewStringSlice("tecnologer"),
 		EnvVars: []string{envvarname.TelegramAdminChatIDs},
 	}
