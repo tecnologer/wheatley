@@ -6,6 +6,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
 	"github.com/tecnologer/wheatley/pkg/telegram/commands"
+	"github.com/tecnologer/wheatley/pkg/twitch"
 	"github.com/tecnologer/wheatley/pkg/utils/log"
 	"github.com/tecnologer/wheatley/pkg/utils/message"
 )
@@ -25,12 +26,13 @@ func (b *BotAPIImpl) Self() tgbotapi.User {
 }
 
 type Config struct {
-	Token     string
-	Verbose   bool
-	DB        *db.Connection
-	ChatAdmin int64
-	Admins    []string
-	IsMock    bool
+	Token        string
+	Verbose      bool
+	DB           *db.Connection
+	ChatAdmin    int64
+	Admins       []string
+	IsMock       bool
+	TwitchConfig *twitch.Config
 }
 
 func (c *Config) String() string {
@@ -93,7 +95,7 @@ func NewBot(config *Config) (*Bot, error) {
 	return &Bot{
 		Config:   config,
 		Bot:      bot,
-		commands: commands.NewCommands(config.DB),
+		commands: commands.NewCommands(config.DB, twitch.New(config.TwitchConfig)),
 	}, nil
 }
 

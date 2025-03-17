@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tecnologer/wheatley/pkg/telegram/commands"
+	"github.com/tecnologer/wheatley/pkg/twitch"
 )
 
 func TestAddStreamerCmd(t *testing.T) { //nolint:funlen
@@ -150,7 +151,11 @@ func TestRemoveStreamerCmd(t *testing.T) { //nolint:funlen
 func TestListStreamersCmd(t *testing.T) {
 	t.Parallel()
 
-	cmd := commands.ListStreamersCmd(nil)
+	cmd := commands.ListStreamersCmd(nil, twitch.New(&twitch.Config{
+		ClientID:     "client_id",
+		ClientSecret: "client_secret",
+		IsMock:       true,
+	}))
 	require.NotNil(t, cmd)
 	require.Nil(t, cmd.Help)
 
@@ -205,7 +210,11 @@ func TestStartCmd(t *testing.T) {
 func TestHelpCmd(t *testing.T) { //nolint:funlen
 	t.Parallel()
 
-	allCommands := commands.NewCommands(nil)
+	allCommands := commands.NewCommands(nil, twitch.New(&twitch.Config{
+		ClientID:     "client_id",
+		ClientSecret: "client_secret",
+		IsMock:       true,
+	}))
 
 	cmd := commands.HelpCmd(allCommands)
 	require.NotNil(t, cmd)

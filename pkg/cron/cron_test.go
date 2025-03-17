@@ -167,6 +167,10 @@ func testConfig(t *testing.T) *Config {
 	tBot, err := telegram.NewBot(&telegram.Config{
 		IsMock: true,
 		Token:  "telegram_token",
+		TwitchConfig: &twitch.Config{
+			ClientID:     "twitch_client",
+			ClientSecret: "twitch_secret",
+		},
 	})
 	require.NoError(t, err, "create telegram bot")
 

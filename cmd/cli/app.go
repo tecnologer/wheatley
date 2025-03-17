@@ -90,6 +90,10 @@ func (c *CLI) run(ctx *cli.Context) error {
 		DB:        dbCnn,
 		ChatAdmin: ctx.Int64(flags.TelegramAdminChatIDsFlagName),
 		Admins:    ctx.StringSlice(flags.TelegramAdminsFlagName),
+		TwitchConfig: &twitch.Config{
+			ClientID:     ctx.String(flags.TwitchClientIDFlagName),
+			ClientSecret: ctx.String(flags.TwitchClientSecretFlagName),
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("create telegram bot: %w", err)

@@ -1,13 +1,16 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/adeithe/go-twitch/api"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/tecnologer/wheatley/pkg/dao"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
+	"github.com/tecnologer/wheatley/pkg/twitch"
 	"github.com/tecnologer/wheatley/pkg/utils/log"
 	"github.com/tecnologer/wheatley/pkg/utils/message"
 )
@@ -169,8 +172,19 @@ func HelpCmd(commands *Commands) *Command {
 	}
 }
 
-func ListStreamersCmd(db *db.Connection) *Command {
+func ListStreamersCmd(db *db.Connection, twch twitch.API) *Command {
 	daoNotif := dao.NewNotificationsDAO(db)
+
+	isStreamer := func(streamerName string) *api.Stream {
+		stream, err := twch.StreamByName(context.Background(), streamerName)
+		if err != nil {
+			log.Warnf("getting stream for %s: %v", streamerName, err)
+
+			return nil
+		}
+
+		return stream
+	}
 
 	return &Command{
 		Name:        ListStreamersCmdName,
@@ -203,6 +217,15 @@ func ListStreamersCmd(db *db.Connection) *Command {
 			for _, notif := range notifications {
 				msg.WriteString("🎮 ")
 				msg.WriteString(MakeMarkdownLinkUser(notif.TwitchStreamerName))
+				msg.WriteString(" ")
+				if stream := isStreamer(notif.TwitchStreamerName); stream != nil {
+					msg.WriteString("- (Playing: ")
+					msg.WriteString(stream.GameName)
+					msg.WriteString(")")
+				} else {
+					msg.WriteString(" - (offline)")
+				}
+
 				msg.WriteString("\n")
 			}
 

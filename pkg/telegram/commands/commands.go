@@ -3,6 +3,7 @@ package commands
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
+	"github.com/tecnologer/wheatley/pkg/twitch"
 )
 
 type (
@@ -15,7 +16,7 @@ type Commands struct {
 	Map map[CommandName]*Command
 }
 
-func NewCommands(dbCnn *db.Connection) *Commands {
+func NewCommands(dbCnn *db.Connection, twch twitch.API) *Commands {
 	commands := &Commands{
 		Map: make(map[CommandName]*Command),
 	}
@@ -25,7 +26,7 @@ func NewCommands(dbCnn *db.Connection) *Commands {
 		AddStreamerCmd(dbCnn),
 		RemoveStreamerCmd(dbCnn),
 		HelpCmd(commands),
-		ListStreamersCmd(dbCnn),
+		ListStreamersCmd(dbCnn, twch),
 	)
 
 	return commands

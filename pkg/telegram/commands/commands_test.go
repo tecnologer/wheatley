@@ -6,12 +6,13 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/tecnologer/wheatley/pkg/telegram/commands"
+	"github.com/tecnologer/wheatley/pkg/twitch"
 )
 
 func TestCommands_HasHandler(t *testing.T) {
 	t.Parallel()
 
-	allCommands := commands.NewCommands(nil)
+	allCommands := commands.NewCommands(nil, nil)
 
 	tests := []struct {
 		name    string
@@ -63,7 +64,11 @@ func TestCommands_HasHandler(t *testing.T) {
 func TestCommands_HasHelp(t *testing.T) {
 	t.Parallel()
 
-	allCommands := commands.NewCommands(nil)
+	allCommands := commands.NewCommands(nil, twitch.New(&twitch.Config{
+		ClientID:     "client_id",
+		ClientSecret: "client_secret",
+		IsMock:       true,
+	}))
 
 	tests := []struct {
 		name    string
@@ -115,7 +120,11 @@ func TestCommands_HasHelp(t *testing.T) {
 func TestCommands_Execute(t *testing.T) {
 	t.Parallel()
 
-	allCommands := commands.NewCommands(nil)
+	allCommands := commands.NewCommands(nil, twitch.New(&twitch.Config{
+		ClientID:     "client_id",
+		ClientSecret: "client_secret",
+		IsMock:       true,
+	}))
 
 	tests := []struct {
 		name    string
@@ -154,7 +163,11 @@ func TestCommands_Execute(t *testing.T) {
 func TestCommand_Help(t *testing.T) {
 	t.Parallel()
 
-	allCommands := commands.NewCommands(nil)
+	allCommands := commands.NewCommands(nil, twitch.New(&twitch.Config{
+		ClientID:     "client_id",
+		ClientSecret: "client_secret",
+		IsMock:       true,
+	}))
 
 	tests := []struct {
 		name    string
@@ -191,7 +204,11 @@ func TestCommand_Help(t *testing.T) {
 func TestCommand_HasAdminNotification(t *testing.T) {
 	t.Parallel()
 
-	allCommands := commands.NewCommands(nil)
+	allCommands := commands.NewCommands(nil, twitch.New(&twitch.Config{
+		ClientID:     "client_id",
+		ClientSecret: "client_secret",
+		IsMock:       true,
+	}))
 
 	tests := []struct {
 		name    string
@@ -228,7 +245,11 @@ func TestCommand_HasAdminNotification(t *testing.T) {
 func TestCommand_AdminNotification(t *testing.T) {
 	t.Parallel()
 
-	allCommands := commands.NewCommands(nil)
+	allCommands := commands.NewCommands(nil, twitch.New(&twitch.Config{
+		ClientID:     "client_id",
+		ClientSecret: "client_secret",
+		IsMock:       true,
+	}))
 
 	tests := []struct {
 		name    string
