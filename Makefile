@@ -7,7 +7,7 @@ DESTINATION=pi@192.168.0.162
 DESTINATION_PATH=/home/pi/wheatley/
 
 build:
-	go build -o ./bin/wheatley ./cmd/main.go
+	go build -ldflags "-X main.version=$(VERSION)" -o ./bin/wheatley ./cmd/main.go
 
 run:
 	go run ./cmd/main.go
@@ -29,17 +29,24 @@ load-image:
 	docker load -i $(CONTAINER_NAME)_$(VERSION)_arm64.tar
 	rm $(CONTAINER_NAME)_$(VERSION)_arm64.tar
 
-scp:
-	scp ./Makefile $(DESTINATION):$(DESTINATION_PATH)
-	scp $(CONTAINER_NAME)_$(VERSION)_arm64.tar $(DESTINATION):$(DESTINATION_PATH)
-
 deploy-docker: load-image run-docker
 
-deploy-pi: dockerize scp
+deploy-pi: build-arm dockerize scp
 
 dockerize:
-	docker buildx build --platform linux/arm64 -t $(CONTAINER_NAME):$(VERSION) --load .
+	echo "Packaging for arm64"
+	docker buildx build --platform=linux/arm64 -f Dockerfile.arm -t $(CONTAINER_NAME):$(VERSION) --load ./bin
 	docker save -o $(CONTAINER_NAME)_$(VERSION)_arm64.tar $(CONTAINER_NAME):$(VERSION)
+
+build-arm:
+	echo "Building for arm64"
+ 	# 	 sudo apt install gcc-aarch64-linux-gnu
+	CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc  GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=$(VERSION)" -o ./bin/wheatley-linux-arm ./cmd/main.go
+
+scp:
+	echo "Copying to pi"
+	scp ./Makefile $(DESTINATION):$(DESTINATION_PATH)
+	scp $(CONTAINER_NAME)_$(VERSION)_arm64.tar $(DESTINATION):$(DESTINATION_PATH)
 
 version:
 	echo $(VERSION)

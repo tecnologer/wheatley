@@ -1,0 +1,8 @@
+FROM golang
+
+WORKDIR /wheatley
+
+COPY ./wheatley-linux-arm ./wheatley
+COPY ./wheatley.db ./wheatley.db
+
+CMD ["./wheatley"]
