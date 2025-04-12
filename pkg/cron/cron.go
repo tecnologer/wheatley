@@ -117,14 +117,13 @@ func (s *Scheduler) requireSendMessage(notification *models.Notification, curren
 		return true
 	}
 
-	return time.Since(notification.LastNotification) >= s.NotificationDelay ||
-		notification.LastGame != currentGame
+	return time.Since(notification.LastNotification) >= s.NotificationDelay || s.isGameChanged(notification, currentGame)
 }
 
 func (s *Scheduler) sendMessage(stream *api.Stream, notification *models.Notification) {
 	err := s.TelegramBot.SendMessage(
 		notification.TelegramChatID,
-		s.buildMessage(stream),
+		s.buildMessage(stream, notification),
 	)
 	if err != nil {
 		log.Errorf("sending message for online streamer %s: %v", notification.TwitchStreamerName, err)
@@ -135,27 +134,47 @@ func (s *Scheduler) sendMessage(stream *api.Stream, notification *models.Notific
 	s.updateNotification(notification)
 }
 
-func (s *Scheduler) buildMessage(stream *api.Stream) string {
-	if stream.ViewerCount > 1 {
+func (s *Scheduler) buildMessage(stream *api.Stream, notification *models.Notification) string {
+	return fmt.Sprintf("%s%s.", s.buildMessageStreamerInfo(stream, notification), s.buildMessageViewersPart(stream, notification))
+}
+
+func (s *Scheduler) buildMessageStreamerInfo(stream *api.Stream, notification *models.Notification) string {
+	if s.isGameChanged(notification, stream.GameName) {
 		return fmt.Sprintf(
-			"%s is streaming %s with %d viewers.",
+			"%s changed the game from %s to %s",
+			commands.MakeMarkdownLinkUser(stream.UserDisplayName),
+			notification.LastGame,
+			stream.GameName,
+		)
+	}
+
+	if stream.ViewerCount > 0 {
+		return fmt.Sprintf(
+			"%s is now streaming %s",
 			commands.MakeMarkdownLinkUser(stream.UserDisplayName),
 			stream.GameName,
-			stream.ViewerCount,
 		)
+	}
+
+	return commands.MakeMarkdownLinkUser(stream.UserDisplayName)
+}
+
+func (s *Scheduler) buildMessageViewersPart(stream *api.Stream, notification *models.Notification) string {
+	if stream.ViewerCount == 0 && s.isGameChanged(notification, stream.GameName) {
+		return " with no viewers"
+	}
+
+	if stream.ViewerCount > 1 {
+		return fmt.Sprintf(" with %d viewers", stream.ViewerCount)
 	}
 
 	if stream.ViewerCount == 1 {
-		return fmt.Sprintf(
-			"%s is streaming %s with a single viewer.",
-			commands.MakeMarkdownLinkUser(stream.UserDisplayName),
-			stream.GameName,
-		)
+		return " with a single viewer"
 	}
 
-	return fmt.Sprintf(
-		"%s just started streaming %s.",
-		commands.MakeMarkdownLinkUser(stream.UserDisplayName),
-		stream.GameName,
-	)
+	return " just started streaming " + stream.GameName
+}
+
+func (s *Scheduler) isGameChanged(notification *models.Notification, currentGame string) bool {
+	return notification.LastGame != currentGame && !notification.LastNotification.IsZero()
 }
