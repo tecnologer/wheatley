@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 	"github.com/stretchr/testify/require"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
 	"github.com/tecnologer/wheatley/pkg/telegram"
@@ -62,7 +62,7 @@ func TestBot_SendMessage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := bot.SendMessage(0, "test")
+			err := bot.SendMessage(0, 0, "test")
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -139,7 +139,7 @@ func messageUpdateCmdAdd(t *testing.T) tgbotapi.Update {
 				ID:       123,
 				UserName: "user_name",
 			},
-			Chat: &tgbotapi.Chat{
+			Chat: tgbotapi.Chat{
 				ID:       123,
 				UserName: "chat_name",
 			},
@@ -157,7 +157,7 @@ func messageUpdateCmdStart(t *testing.T) tgbotapi.Update {
 				ID:       123,
 				UserName: "user_name",
 			},
-			Chat: &tgbotapi.Chat{
+			Chat: tgbotapi.Chat{
 				ID:       123,
 				UserName: "chat_name",
 			},

@@ -95,6 +95,7 @@ func (s *Scheduler) manageStreamerErr(err error, notification *models.Notificati
 func (s *Scheduler) notifyStreamerWentOffline(notification *models.Notification) {
 	err := s.TelegramBot.SendMessage(
 		notification.TelegramChatID,
+		0,
 		fmt.Sprintf("Streamer `%s` went offline", notification.TwitchStreamerName),
 	)
 	if err != nil {
@@ -123,6 +124,7 @@ func (s *Scheduler) requireSendMessage(notification *models.Notification, curren
 func (s *Scheduler) sendMessage(stream *api.Stream, notification *models.Notification) {
 	err := s.TelegramBot.SendMessage(
 		notification.TelegramChatID,
+		0,
 		s.buildMessage(stream, notification),
 	)
 	if err != nil {

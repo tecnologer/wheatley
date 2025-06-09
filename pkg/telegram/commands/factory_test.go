@@ -3,7 +3,7 @@ package commands_test
 import (
 	"testing"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tecnologer/wheatley/pkg/telegram/commands"
@@ -345,7 +345,7 @@ func messageUpdateCmdAdd(t *testing.T) tgbotapi.Update {
 				ID:       123,
 				UserName: "user_name",
 			},
-			Chat: &tgbotapi.Chat{
+			Chat: tgbotapi.Chat{
 				ID:       123,
 				UserName: "chat_name",
 			},
@@ -359,7 +359,7 @@ func editMessageUpdateCmdAdd(t *testing.T) tgbotapi.Update {
 	return tgbotapi.Update{
 		EditedMessage: &tgbotapi.Message{
 			Text: "/add streamer_name",
-			Chat: &tgbotapi.Chat{
+			Chat: tgbotapi.Chat{
 				ID:       123,
 				UserName: "chat_name",
 			},

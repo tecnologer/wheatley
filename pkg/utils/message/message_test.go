@@ -3,7 +3,7 @@ package message_test
 import (
 	"testing"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 	"github.com/stretchr/testify/assert"
 	"github.com/tecnologer/wheatley/pkg/utils/message"
 )
@@ -102,7 +102,7 @@ func TestGetChatIDFromUpdate(t *testing.T) { //nolint: funlen
 			name: "from_message",
 			update: tgbotapi.Update{
 				Message: &tgbotapi.Message{
-					Chat: &tgbotapi.Chat{
+					Chat: tgbotapi.Chat{
 						ID: 123,
 					},
 				},
@@ -113,7 +113,7 @@ func TestGetChatIDFromUpdate(t *testing.T) { //nolint: funlen
 			name: "from_edited_message",
 			update: tgbotapi.Update{
 				EditedMessage: &tgbotapi.Message{
-					Chat: &tgbotapi.Chat{
+					Chat: tgbotapi.Chat{
 						ID: 123,
 					},
 				},
@@ -124,12 +124,12 @@ func TestGetChatIDFromUpdate(t *testing.T) { //nolint: funlen
 			name: "message_and_edited_message_not_nil",
 			update: tgbotapi.Update{
 				Message: &tgbotapi.Message{
-					Chat: &tgbotapi.Chat{
+					Chat: tgbotapi.Chat{
 						ID: 123,
 					},
 				},
 				EditedMessage: &tgbotapi.Message{
-					Chat: &tgbotapi.Chat{
+					Chat: tgbotapi.Chat{
 						ID: 456,
 					},
 				},
@@ -173,7 +173,7 @@ func TestGetChatNameFromUpdate(t *testing.T) { //nolint: funlen
 			name: "from_message_username",
 			update: tgbotapi.Update{
 				Message: &tgbotapi.Message{
-					Chat: &tgbotapi.Chat{
+					Chat: tgbotapi.Chat{
 						UserName: "chat_name",
 					},
 				},
@@ -184,7 +184,7 @@ func TestGetChatNameFromUpdate(t *testing.T) { //nolint: funlen
 			name: "from_message_title",
 			update: tgbotapi.Update{
 				Message: &tgbotapi.Message{
-					Chat: &tgbotapi.Chat{
+					Chat: tgbotapi.Chat{
 						Title: "chat_title",
 					},
 				},
@@ -195,7 +195,7 @@ func TestGetChatNameFromUpdate(t *testing.T) { //nolint: funlen
 			name: "from_edited_message_username",
 			update: tgbotapi.Update{
 				EditedMessage: &tgbotapi.Message{
-					Chat: &tgbotapi.Chat{
+					Chat: tgbotapi.Chat{
 						UserName: "chat_name",
 					},
 				},
@@ -206,7 +206,7 @@ func TestGetChatNameFromUpdate(t *testing.T) { //nolint: funlen
 			name: "from_edited_message_title",
 			update: tgbotapi.Update{
 				EditedMessage: &tgbotapi.Message{
-					Chat: &tgbotapi.Chat{
+					Chat: tgbotapi.Chat{
 						Title: "chat_title",
 					},
 				},

@@ -3,7 +3,7 @@ package telegram
 import (
 	"fmt"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
 	"github.com/tecnologer/wheatley/pkg/telegram/commands"
 	"github.com/tecnologer/wheatley/pkg/twitch"
@@ -99,8 +99,9 @@ func NewBot(config *Config) (*Bot, error) {
 	}, nil
 }
 
-func (b *Bot) SendMessage(chatID int64, text string) error {
+func (b *Bot) SendMessage(chatID int64, threadID int, text string) error {
 	msg := tgbotapi.NewMessage(chatID, text)
+	msg.MessageThreadID = threadID
 
 	msg.ParseMode = tgbotapi.ModeMarkdown
 
@@ -133,7 +134,7 @@ func (b *Bot) ReadUpdates() error {
 
 		log.Infof("received message: %s", msg)
 
-		err = b.SendMessage(message.GetChatIDFromUpdate(update), msg)
+		err = b.SendMessage(message.GetChatIDFromUpdate(update), message.GetMessageEffectID(update), msg)
 		if err != nil {
 			log.Errorf("sending message: %v", err)
 		}
@@ -178,7 +179,7 @@ func (b *Bot) NotifyAdminIfNecessary(update tgbotapi.Update) {
 
 	res := b.commands.AdminNotification(cmdName, update, args...)
 
-	err := b.SendMessage(b.ChatAdmin, res.Message())
+	err := b.SendMessage(b.ChatAdmin, 0, res.Message())
 	if err != nil {
 		log.Errorf("sending message to admin: %v", err)
 	}

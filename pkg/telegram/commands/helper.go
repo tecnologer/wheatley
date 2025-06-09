@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 	"github.com/tecnologer/wheatley/pkg/models"
 	"github.com/tecnologer/wheatley/pkg/utils/message"
 )
