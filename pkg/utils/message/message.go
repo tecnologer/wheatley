@@ -30,12 +30,12 @@ func GetChatIDFromUpdate(update tgbotapi.Update) int64 {
 	return 0
 }
 
-func GetMessageEffectID(update tgbotapi.Update) int {
-	if update.Message != nil {
+func GetMessageThreadID(update tgbotapi.Update) int {
+	if update.Message != nil && update.Message.ReplyToMessage != nil {
 		return update.Message.ReplyToMessage.MessageThreadID
 	}
 
-	if update.EditedMessage != nil {
+	if update.EditedMessage != nil && update.EditedMessage.ReplyToMessage != nil {
 		return update.EditedMessage.ReplyToMessage.MessageThreadID
 	}
 

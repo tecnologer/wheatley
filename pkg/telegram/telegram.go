@@ -134,7 +134,7 @@ func (b *Bot) ReadUpdates() error {
 
 		log.Infof("received message: %s", msg)
 
-		err = b.SendMessage(message.GetChatIDFromUpdate(update), message.GetMessageEffectID(update), msg)
+		err = b.SendMessage(message.GetChatIDFromUpdate(update), message.GetMessageThreadID(update), msg)
 		if err != nil {
 			log.Errorf("sending message: %v", err)
 		}

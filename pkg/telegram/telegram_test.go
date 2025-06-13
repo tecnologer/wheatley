@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
 	"github.com/tecnologer/wheatley/pkg/telegram"
+	"github.com/tecnologer/wheatley/pkg/twitch"
 )
 
 func TestBot_NewBot(t *testing.T) {
@@ -30,6 +31,9 @@ func TestBot_NewBot(t *testing.T) {
 			IsMock: true,
 			Token:  "test_token",
 			DB:     &db.Connection{},
+			TwitchConfig: &twitch.Config{
+				IsMock: true,
+			},
 		})
 
 		require.NoError(t, err)
@@ -44,6 +48,9 @@ func TestBot_SendMessage(t *testing.T) {
 		IsMock: true,
 		Token:  "test_token",
 		DB:     &db.Connection{},
+		TwitchConfig: &twitch.Config{
+			IsMock: true,
+		},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, bot)
@@ -80,6 +87,9 @@ func TestBot_ReadUpdates(t *testing.T) {
 		IsMock: true,
 		Token:  "test_token",
 		DB:     nil,
+		TwitchConfig: &twitch.Config{
+			IsMock: true,
+		},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, bot)
@@ -112,6 +122,9 @@ func TestBot_NotifyAdminIfNecessary(t *testing.T) {
 		DB:        nil,
 		Admins:    []string{"admin"},
 		ChatAdmin: 123,
+		TwitchConfig: &twitch.Config{
+			IsMock: true,
+		},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, bot)

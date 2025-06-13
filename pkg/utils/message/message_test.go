@@ -167,7 +167,7 @@ func TestGetChatNameFromUpdate(t *testing.T) { //nolint: funlen
 				EditedMessage: &tgbotapi.Message{},
 				Message:       &tgbotapi.Message{},
 			},
-			want: "<<no defined>>",
+			want: "",
 		},
 		{
 			name: "from_message_username",
@@ -477,6 +477,85 @@ func TestSentByAdmin(t *testing.T) { //nolint: funlen
 
 			got := message.SentByAdmin(test.update, test.admins)
 			assert.Equal(t, test.want, got)
+		})
+	}
+}
+
+func TestGetMessageThreadID(t *testing.T) { //nolint: funlen
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		update tgbotapi.Update
+		want   int
+	}{
+		{
+			name:   "empty_update",
+			update: tgbotapi.Update{},
+			want:   0,
+		},
+		{
+			name: "empty_message",
+			update: tgbotapi.Update{
+				Message: &tgbotapi.Message{},
+			},
+			want: 0,
+		},
+		{
+			name: "message_with_empty_reply",
+			update: tgbotapi.Update{
+				Message: &tgbotapi.Message{
+					ReplyToMessage: nil,
+				},
+			},
+			want: 0,
+		},
+		{
+			name: "message_with_reply",
+			update: tgbotapi.Update{
+				Message: &tgbotapi.Message{
+					ReplyToMessage: &tgbotapi.Message{
+						MessageThreadID: 123,
+					},
+				},
+			},
+			want: 123,
+		},
+		{
+			name: "edited_message_with_reply",
+			update: tgbotapi.Update{
+				EditedMessage: &tgbotapi.Message{
+					ReplyToMessage: &tgbotapi.Message{
+						MessageThreadID: 456,
+					},
+				},
+			},
+			want: 456,
+		},
+		{
+			name: "message_and_edited_message_with_reply",
+			update: tgbotapi.Update{
+				Message: &tgbotapi.Message{
+					ReplyToMessage: &tgbotapi.Message{
+						MessageThreadID: 123,
+					},
+				},
+				EditedMessage: &tgbotapi.Message{
+					ReplyToMessage: &tgbotapi.Message{
+						MessageThreadID: 456,
+					},
+				},
+			},
+			want: 123,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := message.GetMessageThreadID(tt.update)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

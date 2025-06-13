@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/tecnologer/wheatley/pkg/utils/utype"
 	"time"
 
 	"github.com/adeithe/go-twitch/api"
@@ -95,7 +96,7 @@ func (s *Scheduler) manageStreamerErr(err error, notification *models.Notificati
 func (s *Scheduler) notifyStreamerWentOffline(notification *models.Notification) {
 	err := s.TelegramBot.SendMessage(
 		notification.TelegramChatID,
-		0,
+		utype.PtrToValue(notification.TelegramThreadID),
 		fmt.Sprintf("Streamer `%s` went offline", notification.TwitchStreamerName),
 	)
 	if err != nil {
@@ -124,7 +125,7 @@ func (s *Scheduler) requireSendMessage(notification *models.Notification, curren
 func (s *Scheduler) sendMessage(stream *api.Stream, notification *models.Notification) {
 	err := s.TelegramBot.SendMessage(
 		notification.TelegramChatID,
-		0,
+		utype.PtrToValue(notification.TelegramThreadID),
 		s.buildMessage(stream, notification),
 	)
 	if err != nil {
