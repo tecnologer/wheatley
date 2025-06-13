@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
+	"github.com/tecnologer/wheatley/pkg/constants"
 	"github.com/tecnologer/wheatley/pkg/models"
 	"github.com/tecnologer/wheatley/pkg/utils/message"
 )
@@ -74,9 +75,21 @@ func buildNotificationFromUpdate(update tgbotapi.Update, args, argsOrder []strin
 		return nil, fmt.Errorf("the arguments are not valid. %w", err)
 	}
 
+	if argsMapped["name"] == "" {
+		return nil, fmt.Errorf("missing streamer name in arguments")
+	}
+
+	var threadID *int
+	if updateThreadID := message.GetMessageThreadID(update); updateThreadID != 0 {
+		threadID = &updateThreadID
+	}
+
+	argsMapped["name"] = strings.TrimPrefix(strings.ToLower(argsMapped["name"]), constants.TwitchURLPrefix)
+
 	notification := &models.Notification{
 		TwitchStreamerName: argsMapped["name"],
 		TelegramChatID:     chatID,
+		TelegramThreadID:   threadID,
 	}
 
 	return notification, nil

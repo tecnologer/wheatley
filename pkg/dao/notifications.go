@@ -19,10 +19,12 @@ func NewNotifications(db *db.Connection) *Notifications {
 	}
 }
 
-func (s *Notifications) NotificationByStreamerName(chatID int64, streamerName string) (*models.Notification, error) {
+func (s *Notifications) NotificationByStreamerName(chatID int64, threadID *int, streamerName string) (*models.Notification, error) {
 	var streamer models.Notification
 
-	err := s.db.Where("twitch_streamer_name = ? AND telegram_chat_id = ?", streamerName, chatID).First(&streamer).Error
+	err := s.db.Where("twitch_streamer_name = ? AND telegram_chat_id = ? AND telegram_thread_id = ?", streamerName, chatID, threadID).
+		First(&streamer).
+		Error
 	if err != nil {
 		return nil, fmt.Errorf("getting notification settings: %w", err)
 	}
@@ -31,7 +33,7 @@ func (s *Notifications) NotificationByStreamerName(chatID int64, streamerName st
 }
 
 func (s *Notifications) CreateNotification(notification *models.Notification) error {
-	existing, err := s.NotificationByStreamerName(notification.TelegramChatID, notification.TwitchStreamerName)
+	existing, err := s.NotificationByStreamerName(notification.TelegramChatID, notification.TelegramThreadID, notification.TwitchStreamerName)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return fmt.Errorf("getting existing notification settings: %w", err)
 	}

@@ -4,10 +4,11 @@ import (
 	"testing"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 	"github.com/stretchr/testify/require"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
 	"github.com/tecnologer/wheatley/pkg/telegram"
+	"github.com/tecnologer/wheatley/pkg/twitch"
 )
 
 func TestBot_NewBot(t *testing.T) {
@@ -30,6 +31,9 @@ func TestBot_NewBot(t *testing.T) {
 			IsMock: true,
 			Token:  "test_token",
 			DB:     &db.Connection{},
+			TwitchConfig: &twitch.Config{
+				IsMock: true,
+			},
 		})
 
 		require.NoError(t, err)
@@ -44,6 +48,9 @@ func TestBot_SendMessage(t *testing.T) {
 		IsMock: true,
 		Token:  "test_token",
 		DB:     &db.Connection{},
+		TwitchConfig: &twitch.Config{
+			IsMock: true,
+		},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, bot)
@@ -62,7 +69,7 @@ func TestBot_SendMessage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := bot.SendMessage(0, "test")
+			err := bot.SendMessage(0, 0, "test")
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -80,6 +87,9 @@ func TestBot_ReadUpdates(t *testing.T) {
 		IsMock: true,
 		Token:  "test_token",
 		DB:     nil,
+		TwitchConfig: &twitch.Config{
+			IsMock: true,
+		},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, bot)
@@ -112,6 +122,9 @@ func TestBot_NotifyAdminIfNecessary(t *testing.T) {
 		DB:        nil,
 		Admins:    []string{"admin"},
 		ChatAdmin: 123,
+		TwitchConfig: &twitch.Config{
+			IsMock: true,
+		},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, bot)
@@ -139,7 +152,7 @@ func messageUpdateCmdAdd(t *testing.T) tgbotapi.Update {
 				ID:       123,
 				UserName: "user_name",
 			},
-			Chat: &tgbotapi.Chat{
+			Chat: tgbotapi.Chat{
 				ID:       123,
 				UserName: "chat_name",
 			},
@@ -157,7 +170,7 @@ func messageUpdateCmdStart(t *testing.T) tgbotapi.Update {
 				ID:       123,
 				UserName: "user_name",
 			},
-			Chat: &tgbotapi.Chat{
+			Chat: tgbotapi.Chat{
 				ID:       123,
 				UserName: "chat_name",
 			},

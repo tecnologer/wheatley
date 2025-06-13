@@ -41,7 +41,8 @@ dockerize:
 build-arm:
 	echo "Building for arm64"
  	# 	 sudo apt install gcc-aarch64-linux-gnu
-	CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc  GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=$(VERSION)" -o ./bin/wheatley-linux-arm ./cmd/main.go
+# 	CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc  GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=$(VERSION)" -o ./bin/wheatley-linux-arm ./cmd/main.go
+	CGO_ENABLED=1 CC="zig cc -target aarch64-linux-gnu"  GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=$(VERSION)" -o ./bin/wheatley-linux-arm ./cmd/main.go
 
 scp:
 	echo "Copying to pi"

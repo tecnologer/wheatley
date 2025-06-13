@@ -1,9 +1,11 @@
 package commands_test
 
 import (
+	"context"
 	"testing"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
+	"github.com/adeithe/go-twitch/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tecnologer/wheatley/pkg/telegram/commands"
@@ -151,11 +153,16 @@ func TestRemoveStreamerCmd(t *testing.T) { //nolint:funlen
 func TestListStreamersCmd(t *testing.T) {
 	t.Parallel()
 
-	cmd := commands.ListStreamersCmd(nil, twitch.New(&twitch.Config{
+	twitchInstance := twitch.New(&twitch.Config{
 		ClientID:     "client_id",
 		ClientSecret: "client_secret",
 		IsMock:       true,
-	}))
+	})
+
+	twitchMock, isMock := twitchInstance.(*twitch.MockAPI)
+	require.True(t, isMock)
+
+	cmd := commands.ListStreamersCmd(nil, twitchInstance)
 	require.NotNil(t, cmd)
 	require.Nil(t, cmd.Help)
 
@@ -165,14 +172,21 @@ func TestListStreamersCmd(t *testing.T) {
 	t.Run("list_streamers_handler", func(t *testing.T) {
 		t.Parallel()
 
+		twitchMock.On("StreamByName", context.Background(), "streamer_name").Return(&api.Stream{
+			GameName: "Game Name",
+		}, nil)
+
+		twitchMock.On("StreamByName", context.Background(), "another_streamer").Return(nil, nil)
+
 		response := cmd.Handler(cmd, messageUpdateCmdAdd(t))
 		require.NotNil(t, response, "response should not be nil")
 		require.False(t, response.HasError(), "response should not have an error")
 
 		assert.Equal(
 			t,
-			"You are subscribed to the following streamers:\n\n🎮 [streamer_name](https://twitch.tv/streamer_name)\n"+
-				"🎮 [another_streamer](https://twitch.tv/another_streamer)\n",
+			"You are subscribed to the following streamers:\n\n"+
+				"🎮 [streamer_name](https://twitch.tv/streamer_name) - (Playing: Game Name)\n"+
+				"🎮 [another_streamer](https://twitch.tv/another_streamer)  - (offline)\n",
 			response.Message(),
 			"response message should match",
 		)
@@ -345,7 +359,7 @@ func messageUpdateCmdAdd(t *testing.T) tgbotapi.Update {
 				ID:       123,
 				UserName: "user_name",
 			},
-			Chat: &tgbotapi.Chat{
+			Chat: tgbotapi.Chat{
 				ID:       123,
 				UserName: "chat_name",
 			},
@@ -359,7 +373,7 @@ func editMessageUpdateCmdAdd(t *testing.T) tgbotapi.Update {
 	return tgbotapi.Update{
 		EditedMessage: &tgbotapi.Message{
 			Text: "/add streamer_name",
-			Chat: &tgbotapi.Chat{
+			Chat: tgbotapi.Chat{
 				ID:       123,
 				UserName: "chat_name",
 			},

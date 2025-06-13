@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 	"github.com/adeithe/go-twitch/api"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/tecnologer/wheatley/pkg/dao"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
 	"github.com/tecnologer/wheatley/pkg/twitch"
