@@ -9,7 +9,7 @@ type NotificationsDAO interface {
 	CreateNotification(notification *models.Notification) error
 	UpdateNotification(notification *models.Notification) error
 	DeleteNotification(notification *models.Notification) error
-	NotificationsByChatID(chatID int64) ([]*models.Notification, error)
+	NotificationsByChatID(chatID int64, threadID *int) ([]*models.Notification, error)
 	AllNotifications() ([]*models.Notification, error)
 }
 
@@ -35,15 +35,17 @@ func (n NotificationsMock) DeleteNotification(_ *models.Notification) error {
 	return nil
 }
 
-func (n NotificationsMock) NotificationsByChatID(chatID int64) ([]*models.Notification, error) {
+func (n NotificationsMock) NotificationsByChatID(chatID int64, threadID *int) ([]*models.Notification, error) {
 	return []*models.Notification{
 		{
 			TwitchStreamerName: "streamer_name",
 			TelegramChatID:     chatID,
+			TelegramThreadID:   threadID,
 		},
 		{
 			TwitchStreamerName: "another_streamer",
 			TelegramChatID:     chatID,
+			TelegramThreadID:   threadID,
 		},
 	}, nil
 }

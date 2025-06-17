@@ -108,9 +108,10 @@ func TestScheduler_buildMessage(t *testing.T) { //nolint:funlen
 				ViewerCount:     1,
 				UserDisplayName: "StreamerName",
 				GameName:        "GameName",
+				Title:           "Stream Title",
 			},
 			notification: &models.Notification{},
-			want:         "[StreamerName](https://twitch.tv/StreamerName) is now streaming GameName with a single viewer.",
+			want:         "[StreamerName](https://twitch.tv/StreamerName) is now streaming GameName with a single viewer.\n\nStream Title",
 		},
 		{
 			name: "multiple_viewers",
@@ -118,9 +119,10 @@ func TestScheduler_buildMessage(t *testing.T) { //nolint:funlen
 				ViewerCount:     6,
 				UserDisplayName: "StreamerName",
 				GameName:        "GameName",
+				Title:           "Stream Title",
 			},
 			notification: &models.Notification{},
-			want:         "[StreamerName](https://twitch.tv/StreamerName) is now streaming GameName with 6 viewers.",
+			want:         "[StreamerName](https://twitch.tv/StreamerName) is now streaming GameName with 6 viewers.\n\nStream Title",
 		},
 		{
 			name: "single_viewer_different_game",
@@ -128,12 +130,13 @@ func TestScheduler_buildMessage(t *testing.T) { //nolint:funlen
 				ViewerCount:     1,
 				UserDisplayName: "StreamerName",
 				GameName:        "GameName",
+				Title:           "Stream Title",
 			},
 			notification: &models.Notification{
 				LastGame:         "AnotherGame",
 				LastNotification: time.Now().Add(-6 * time.Minute),
 			},
-			want: "[StreamerName](https://twitch.tv/StreamerName) changed the game from AnotherGame to GameName with a single viewer.",
+			want: "[StreamerName](https://twitch.tv/StreamerName) changed the game from AnotherGame to GameName with a single viewer.\n\nStream Title",
 		},
 		{
 			name: "multiple_viewers_different_game",
@@ -141,12 +144,13 @@ func TestScheduler_buildMessage(t *testing.T) { //nolint:funlen
 				ViewerCount:     6,
 				UserDisplayName: "StreamerName",
 				GameName:        "GameName",
+				Title:           "Stream Title",
 			},
 			notification: &models.Notification{
 				LastGame:         "AnotherGame",
 				LastNotification: time.Now().Add(-6 * time.Minute),
 			},
-			want: "[StreamerName](https://twitch.tv/StreamerName) changed the game from AnotherGame to GameName with 6 viewers.",
+			want: "[StreamerName](https://twitch.tv/StreamerName) changed the game from AnotherGame to GameName with 6 viewers.\n\nStream Title",
 		},
 		{
 			name: "no_viewers",
@@ -154,9 +158,10 @@ func TestScheduler_buildMessage(t *testing.T) { //nolint:funlen
 				ViewerCount:     0,
 				UserDisplayName: "StreamerName",
 				GameName:        "GameName",
+				Title:           "Stream Title",
 			},
 			notification: &models.Notification{},
-			want:         "[StreamerName](https://twitch.tv/StreamerName) just started streaming GameName.",
+			want:         "[StreamerName](https://twitch.tv/StreamerName) just started streaming GameName.\n\nStream Title",
 		},
 		{
 			name: "no_viewers_different_game",
@@ -164,12 +169,13 @@ func TestScheduler_buildMessage(t *testing.T) { //nolint:funlen
 				ViewerCount:     0,
 				UserDisplayName: "StreamerName",
 				GameName:        "GameName",
+				Title:           "Stream Title",
 			},
 			notification: &models.Notification{
 				LastGame:         "AnotherGame",
 				LastNotification: time.Now().Add(-6 * time.Minute),
 			},
-			want: "[StreamerName](https://twitch.tv/StreamerName) changed the game from AnotherGame to GameName with no viewers.",
+			want: "[StreamerName](https://twitch.tv/StreamerName) changed the game from AnotherGame to GameName with no viewers.\n\nStream Title",
 		},
 	}
 

@@ -19,6 +19,7 @@ run-docker:
 	@docker ps -a --format "{{.Names}}" | grep -w $(CONTAINER_NAME) > /dev/null 2>&1; \
 	if [ $$? -eq 0 ]; then \
 		docker cp $(CONTAINER_NAME):/wheatley/wheatley.db ./wheatley.db; \
+		docker cp $(CONTAINER_NAME):/wheatley/wheatley.db ./wheatley_$(shell date +%Y%m%d_%H%M%S).db; \
 		docker stop $(CONTAINER_NAME) || true; \
 		docker rm $(CONTAINER_NAME) || true; \
 	fi
@@ -27,9 +28,11 @@ run-docker:
 
 load-image:
 	docker load -i $(CONTAINER_NAME)_$(VERSION)_arm64.tar
-	rm $(CONTAINER_NAME)_$(VERSION)_arm64.tar
 
 deploy-docker: load-image run-docker
+	if [ -f load-image.done ] && [ -f run-docker.done ]; then \
+		rm $(CONTAINER_NAME)_$(VERSION)_arm64.tar; \
+	fi
 
 deploy-pi: build-arm dockerize scp
 
