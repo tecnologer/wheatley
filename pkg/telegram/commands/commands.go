@@ -27,6 +27,7 @@ func NewCommands(dbCnn *db.Connection, twch twitch.API) *Commands {
 		RemoveStreamerCmd(dbCnn),
 		HelpCmd(commands),
 		ListStreamersCmd(dbCnn, twch),
+		ShowVersionCmd(),
 	)
 
 	return commands

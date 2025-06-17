@@ -8,4 +8,5 @@ const (
 	RemoveStreamerCmdName CommandName = "remove"
 	ListStreamersCmdName  CommandName = "list"
 	HelpCmdName           CommandName = "help"
+	VersionCmdName        CommandName = "version"
 )

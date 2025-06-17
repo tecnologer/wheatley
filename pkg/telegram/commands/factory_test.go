@@ -253,7 +253,8 @@ func TestHelpCmd(t *testing.T) { //nolint:funlen
 				"» /help: Shows the available commands and their usage.\n"+
 				"» /list: Lists all the streamers you're currently following.\n"+
 				"» /remove: Removes a streamer from the list. You won't receive notifications for this streamer anymore.\n"+
-				"» /start: Starts the bot.\n\n"+
+				"» /start: Starts the bot.\n"+
+				"» /version: Shows the current version of the bot.\n\n"+
 				"If you want get more information about a specific command, use `/help <command>`. For example: `/help add`.",
 			response.Message(),
 			"response message should match",
@@ -274,7 +275,8 @@ func TestHelpCmd(t *testing.T) { //nolint:funlen
 				"» /help: Shows the available commands and their usage.\n"+
 				"» /list: Lists all the streamers you're currently following.\n"+
 				"» /remove: Removes a streamer from the list. You won't receive notifications for this streamer anymore.\n"+
-				"» /start: Starts the bot.\n\n"+
+				"» /start: Starts the bot.\n"+
+				"» /version: Shows the current version of the bot.\n\n"+
 				"If you want get more information about a specific command, use `/help <command>`. For example: `/help add`.",
 			response.Message(),
 			"response message should match",
@@ -327,7 +329,9 @@ func TestHelpCmd(t *testing.T) { //nolint:funlen
 				"» /add: Adds a streamer to the list of notifications. You will be notified when the streamer goes live.\n"+
 				"» /help: Shows the available commands and their usage.\n» /list: Lists all the streamers you're currently following.\n"+
 				"» /remove: Removes a streamer from the list. You won't receive notifications for this streamer anymore.\n"+
-				"» /start: Starts the bot.\n\nIf you want get more information about a specific command, use `/help <command>`. For example: `/help add`.",
+				"» /start: Starts the bot.\n"+
+				"» /version: Shows the current version of the bot.\n\n"+
+				"If you want get more information about a specific command, use `/help <command>`. For example: `/help add`.",
 			response.Message(),
 			"response message should match",
 		)

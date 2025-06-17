@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 	"github.com/adeithe/go-twitch/api"
+	"github.com/tecnologer/wheatley/pkg/constants/envvarname"
 	"github.com/tecnologer/wheatley/pkg/dao"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
 	"github.com/tecnologer/wheatley/pkg/models"
@@ -247,4 +249,22 @@ func buildMessageForListStreamers(notif *models.Notification, twch twitch.API) s
 	msg.WriteString("\n")
 
 	return msg.String()
+}
+
+func ShowVersionCmd() *Command {
+	return &Command{
+		Name:        VersionCmdName,
+		Description: "Shows the current version of the bot.",
+		Handler: func(cmd *Command, _ tgbotapi.Update, _ ...string) *Response {
+			version := os.Getenv(envvarname.BotVersion)
+			if version == "" {
+				version = "v.development"
+			}
+
+			return NewResponse(
+				WithCommand(cmd),
+				WithMessage("Version: "+version),
+			)
+		},
+	}
 }
