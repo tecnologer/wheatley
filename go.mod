@@ -3,10 +3,10 @@ module github.com/tecnologer/wheatley
 go 1.23.4
 
 require (
+	github.com/OvyFlash/telegram-bot-api v0.0.0-20250511194450-d315c30d9c40
 	github.com/adeithe/go-twitch v0.3.1
 	github.com/charmbracelet/log v0.4.0
 	github.com/go-co-op/gocron/v2 v2.15.0
-	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.5
 	gorm.io/driver/sqlite v1.5.7

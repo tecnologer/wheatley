@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 	"github.com/adeithe/go-twitch/api"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/tecnologer/wheatley/pkg/constants/envvarname"
 	"github.com/tecnologer/wheatley/pkg/dao"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
+	"github.com/tecnologer/wheatley/pkg/models"
 	"github.com/tecnologer/wheatley/pkg/twitch"
 	"github.com/tecnologer/wheatley/pkg/utils/log"
 	"github.com/tecnologer/wheatley/pkg/utils/message"
@@ -175,17 +178,6 @@ func HelpCmd(commands *Commands) *Command {
 func ListStreamersCmd(db *db.Connection, twch twitch.API) *Command {
 	daoNotif := dao.NewNotificationsDAO(db)
 
-	isStreamer := func(streamerName string) *api.Stream {
-		stream, err := twch.StreamByName(context.Background(), streamerName)
-		if err != nil {
-			log.Warnf("getting stream for %s: %v", streamerName, err)
-
-			return nil
-		}
-
-		return stream
-	}
-
 	return &Command{
 		Name:        ListStreamersCmdName,
 		Description: "Lists all the streamers you're currently following.",
@@ -199,7 +191,12 @@ func ListStreamersCmd(db *db.Connection, twch twitch.API) *Command {
 				return response.SetMissingArgs("Missing chat ID")
 			}
 
-			notifications, err := daoNotif.NotificationsByChatID(chatID)
+			var threadID *int
+			if threadIDValue := message.GetMessageThreadID(update); threadIDValue != 0 {
+				threadID = &threadIDValue
+			}
+
+			notifications, err := daoNotif.NotificationsByChatID(chatID, threadID)
 			if err != nil {
 				log.Errorf("getting notifications: %v", err)
 
@@ -215,21 +212,59 @@ func ListStreamersCmd(db *db.Connection, twch twitch.API) *Command {
 			msg.WriteString("You are subscribed to the following streamers:\n\n")
 
 			for _, notif := range notifications {
-				msg.WriteString("🎮 ")
-				msg.WriteString(MakeMarkdownLinkUser(notif.TwitchStreamerName))
-				msg.WriteString(" ")
-				if stream := isStreamer(notif.TwitchStreamerName); stream != nil {
-					msg.WriteString("- (Playing: ")
-					msg.WriteString(stream.GameName)
-					msg.WriteString(")")
-				} else {
-					msg.WriteString(" - (offline)")
-				}
-
-				msg.WriteString("\n")
+				msg.WriteString(buildMessageForListStreamers(notif, twch))
 			}
 
 			return response.SetMessage(msg.String())
+		},
+	}
+}
+
+func isStreamer(streamerName string, twch twitch.API) *api.Stream {
+	stream, err := twch.StreamByName(context.Background(), streamerName)
+	if err != nil && !errors.Is(err, twitch.ErrNotFound) {
+		log.Warnf("getting stream for %s: %v", streamerName, err)
+
+		return nil
+	}
+
+	return stream
+}
+
+func buildMessageForListStreamers(notif *models.Notification, twch twitch.API) string {
+	var msg strings.Builder
+
+	msg.WriteString("🎮 ")
+	msg.WriteString(MakeMarkdownLinkUser(notif.TwitchStreamerName))
+	msg.WriteString(" ")
+
+	if stream := isStreamer(notif.TwitchStreamerName, twch); stream != nil {
+		msg.WriteString("- (Playing: ")
+		msg.WriteString(stream.GameName)
+		msg.WriteString(")")
+	} else {
+		msg.WriteString(" - (offline)")
+	}
+
+	msg.WriteString("\n")
+
+	return msg.String()
+}
+
+func ShowVersionCmd() *Command {
+	return &Command{
+		Name:        VersionCmdName,
+		Description: "Shows the current version of the bot.",
+		Handler: func(cmd *Command, _ tgbotapi.Update, _ ...string) *Response {
+			version := os.Getenv(envvarname.BotVersion)
+			if version == "" {
+				version = "v.development"
+			}
+
+			return NewResponse(
+				WithCommand(cmd),
+				WithMessage("Version: "+version),
+			)
 		},
 	}
 }

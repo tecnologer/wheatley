@@ -42,3 +42,4 @@ linters-settings:
       - const C
       - T any
       - m map[string]int
+      - tx *gorm.DB

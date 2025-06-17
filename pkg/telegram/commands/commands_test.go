@@ -3,7 +3,7 @@ package commands_test
 import (
 	"testing"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 	"github.com/stretchr/testify/assert"
 	"github.com/tecnologer/wheatley/pkg/telegram/commands"
 	"github.com/tecnologer/wheatley/pkg/twitch"

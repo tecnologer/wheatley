@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tecnologer/wheatley/pkg/contants/envvarname"
+	"github.com/tecnologer/wheatley/pkg/constants/envvarname"
 	"github.com/tecnologer/wheatley/pkg/dao/db"
 )
 

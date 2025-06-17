@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+var separatorRegEx = regexp.MustCompile(`^([^:=]*)([=:](.*))?`)
+
 // ExtractCommand extracts the command name and its arguments from a message.
 // A command is a message that starts with a `/`.
 // The command name is the first part of the message, and the arguments are the rest.
@@ -88,9 +90,11 @@ func ExtractValueFromArg(arg string) (string, string) {
 		return "", ""
 	}
 
-	arg = strings.TrimSpace(arg)
+	if isURL(arg) {
+		return arg, ""
+	}
 
-	separatorRegEx := regexp.MustCompile(`^([^:=]*)([=:](.*))?`)
+	arg = strings.TrimSpace(arg)
 
 	chunks := separatorRegEx.FindStringSubmatch(arg)
 
@@ -123,4 +127,9 @@ func ArgsToMap(args []string, order []string) (map[string]string, error) {
 	}
 
 	return argsMap, nil
+}
+
+func isURL(arg string) bool {
+	// A very basic URL check, can be improved with a proper regex if needed.
+	return strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://")
 }

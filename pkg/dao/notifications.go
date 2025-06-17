@@ -19,10 +19,18 @@ func NewNotifications(db *db.Connection) *Notifications {
 	}
 }
 
-func (s *Notifications) NotificationByStreamerName(chatID int64, streamerName string) (*models.Notification, error) {
+func (s *Notifications) NotificationByStreamerName(chatID int64, threadID *int, streamerName string) (*models.Notification, error) {
 	var streamer models.Notification
 
-	err := s.db.Where("twitch_streamer_name = ? AND telegram_chat_id = ?", streamerName, chatID).First(&streamer).Error
+	tx := s.db.Where("twitch_streamer_name = ? AND telegram_chat_id = ?", streamerName, chatID, threadID)
+
+	if threadID != nil {
+		tx = tx.Where("telegram_thread_id = ?", *threadID)
+	} else {
+		tx = tx.Where("telegram_thread_id IS NULL")
+	}
+
+	err := tx.First(&streamer).Error
 	if err != nil {
 		return nil, fmt.Errorf("getting notification settings: %w", err)
 	}
@@ -31,7 +39,7 @@ func (s *Notifications) NotificationByStreamerName(chatID int64, streamerName st
 }
 
 func (s *Notifications) CreateNotification(notification *models.Notification) error {
-	existing, err := s.NotificationByStreamerName(notification.TelegramChatID, notification.TwitchStreamerName)
+	existing, err := s.NotificationByStreamerName(notification.TelegramChatID, notification.TelegramThreadID, notification.TwitchStreamerName)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return fmt.Errorf("getting existing notification settings: %w", err)
 	}
@@ -50,10 +58,16 @@ func (s *Notifications) CreateNotification(notification *models.Notification) er
 }
 
 func (s *Notifications) DeleteNotification(notification *models.Notification) error {
-	err := s.db.Unscoped().
-		Where("twitch_streamer_name = ? AND telegram_chat_id = ?", notification.TwitchStreamerName, notification.TelegramChatID).
-		Delete(notification).
-		Error
+	tx := s.db.Unscoped().
+		Where("twitch_streamer_name = ? AND telegram_chat_id = ?", notification.TwitchStreamerName, notification.TelegramChatID)
+
+	if notification.TelegramThreadID != nil {
+		tx = tx.Where("telegram_thread_id = ?", *notification.TelegramThreadID)
+	} else {
+		tx = tx.Where("telegram_thread_id IS NULL")
+	}
+
+	err := tx.Delete(notification).Error
 	if err != nil {
 		return fmt.Errorf("deleting notification settings: %w", err)
 	}
@@ -81,10 +95,18 @@ func (s *Notifications) UpdateNotification(notification *models.Notification) er
 	return nil
 }
 
-func (s *Notifications) NotificationsByChatID(chatID int64) ([]*models.Notification, error) {
+func (s *Notifications) NotificationsByChatID(chatID int64, threadID *int) ([]*models.Notification, error) {
 	var notifications []*models.Notification
 
-	err := s.db.Where("telegram_chat_id = ?", chatID).Find(&notifications).Error
+	tx := s.db.Where("telegram_chat_id = ?", chatID)
+
+	if threadID != nil {
+		tx = tx.Where("telegram_thread_id = ?", threadID)
+	} else {
+		tx = tx.Where("telegram_thread_id IS NULL")
+	}
+
+	err := tx.Find(&notifications).Error
 	if err != nil {
 		return nil, fmt.Errorf("getting notifications by chat ID: %w", err)
 	}

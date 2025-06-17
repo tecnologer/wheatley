@@ -14,6 +14,7 @@ import (
 	"github.com/tecnologer/wheatley/pkg/telegram/commands"
 	"github.com/tecnologer/wheatley/pkg/twitch"
 	"github.com/tecnologer/wheatley/pkg/utils/log"
+	"github.com/tecnologer/wheatley/pkg/utils/utype"
 )
 
 type Config struct {
@@ -87,6 +88,8 @@ func (s *Scheduler) manageStreamerErr(err error, notification *models.Notificati
 		if !notification.LastNotification.IsZero() {
 			s.notifyStreamerWentOffline(notification)
 		}
+
+		return
 	}
 
 	log.Errorf("getting stream for %s: %v", notification.TwitchStreamerName, err)
@@ -95,6 +98,7 @@ func (s *Scheduler) manageStreamerErr(err error, notification *models.Notificati
 func (s *Scheduler) notifyStreamerWentOffline(notification *models.Notification) {
 	err := s.TelegramBot.SendMessage(
 		notification.TelegramChatID,
+		utype.PtrToValue(notification.TelegramThreadID),
 		fmt.Sprintf("Streamer `%s` went offline", notification.TwitchStreamerName),
 	)
 	if err != nil {
@@ -123,6 +127,7 @@ func (s *Scheduler) requireSendMessage(notification *models.Notification, curren
 func (s *Scheduler) sendMessage(stream *api.Stream, notification *models.Notification) {
 	err := s.TelegramBot.SendMessage(
 		notification.TelegramChatID,
+		utype.PtrToValue(notification.TelegramThreadID),
 		s.buildMessage(stream, notification),
 	)
 	if err != nil {
@@ -135,7 +140,7 @@ func (s *Scheduler) sendMessage(stream *api.Stream, notification *models.Notific
 }
 
 func (s *Scheduler) buildMessage(stream *api.Stream, notification *models.Notification) string {
-	return fmt.Sprintf("%s%s.", s.buildMessageStreamerInfo(stream, notification), s.buildMessageViewersPart(stream, notification))
+	return fmt.Sprintf("%s%s.\n\n%s", s.buildMessageStreamerInfo(stream, notification), s.buildMessageViewersPart(stream, notification), stream.Title)
 }
 
 func (s *Scheduler) buildMessageStreamerInfo(stream *api.Stream, notification *models.Notification) string {

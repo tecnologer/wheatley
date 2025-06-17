@@ -1,7 +1,7 @@
 package flags
 
 import (
-	"github.com/tecnologer/wheatley/pkg/contants/envvarname"
+	"github.com/tecnologer/wheatley/pkg/constants/envvarname"
 	"github.com/urfave/cli/v2"
 )
 

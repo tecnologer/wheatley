@@ -19,6 +19,7 @@ run-docker:
 	@docker ps -a --format "{{.Names}}" | grep -w $(CONTAINER_NAME) > /dev/null 2>&1; \
 	if [ $$? -eq 0 ]; then \
 		docker cp $(CONTAINER_NAME):/wheatley/wheatley.db ./wheatley.db; \
+		docker cp $(CONTAINER_NAME):/wheatley/wheatley.db ./wheatley_$(shell date +%Y%m%d_%H%M%S).db; \
 		docker stop $(CONTAINER_NAME) || true; \
 		docker rm $(CONTAINER_NAME) || true; \
 	fi
@@ -27,9 +28,11 @@ run-docker:
 
 load-image:
 	docker load -i $(CONTAINER_NAME)_$(VERSION)_arm64.tar
-	rm $(CONTAINER_NAME)_$(VERSION)_arm64.tar
 
 deploy-docker: load-image run-docker
+	if [ -f load-image.done ] && [ -f run-docker.done ]; then \
+		rm $(CONTAINER_NAME)_$(VERSION)_arm64.tar; \
+	fi
 
 deploy-pi: build-arm dockerize scp
 
@@ -41,7 +44,8 @@ dockerize:
 build-arm:
 	echo "Building for arm64"
  	# 	 sudo apt install gcc-aarch64-linux-gnu
-	CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc  GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=$(VERSION)" -o ./bin/wheatley-linux-arm ./cmd/main.go
+# 	CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc  GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=$(VERSION)" -o ./bin/wheatley-linux-arm ./cmd/main.go
+	CGO_ENABLED=1 CC="zig cc -target aarch64-linux-gnu"  GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=$(VERSION)" -o ./bin/wheatley-linux-arm ./cmd/main.go
 
 scp:
 	echo "Copying to pi"

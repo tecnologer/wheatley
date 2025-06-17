@@ -9,4 +9,5 @@ const (
 	TwitchClientID       = "WHEATLEY_TWITCH_CLIENT_ID"
 	TwitchClientSecret   = "WHEATLEY_TWITCH_CLIENT_SECRET"
 	TelegramAdminChatIDs = "WHEATLEY_TELEGRAM_ADMIN_CHAT_IDS"
+	BotVersion           = "WHEATLEY_VERSION"
 )

@@ -3,7 +3,7 @@ package message
 import (
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 )
 
 func GetFromUpdate(update tgbotapi.Update) string {
@@ -19,16 +19,24 @@ func GetFromUpdate(update tgbotapi.Update) string {
 }
 
 func GetChatIDFromUpdate(update tgbotapi.Update) int64 {
-	if update.Message == nil && update.EditedMessage == nil {
-		return 0
-	}
-
-	if update.Message != nil && update.Message.Chat != nil {
+	if update.Message != nil {
 		return update.Message.Chat.ID
 	}
 
-	if update.EditedMessage != nil && update.EditedMessage.Chat != nil {
+	if update.EditedMessage != nil {
 		return update.EditedMessage.Chat.ID
+	}
+
+	return 0
+}
+
+func GetMessageThreadID(update tgbotapi.Update) int {
+	if update.Message != nil && update.Message.ReplyToMessage != nil {
+		return update.Message.ReplyToMessage.MessageThreadID
+	}
+
+	if update.EditedMessage != nil && update.EditedMessage.ReplyToMessage != nil {
+		return update.EditedMessage.ReplyToMessage.MessageThreadID
 	}
 
 	return 0
@@ -39,7 +47,7 @@ func GetChatNameFromUpdate(update tgbotapi.Update) string {
 		return "<<no defined>>"
 	}
 
-	if update.Message != nil && update.Message.Chat != nil {
+	if update.Message != nil {
 		if update.Message.Chat.UserName != "" {
 			return update.Message.Chat.UserName
 		}
@@ -47,7 +55,7 @@ func GetChatNameFromUpdate(update tgbotapi.Update) string {
 		return update.Message.Chat.Title
 	}
 
-	if update.EditedMessage != nil && update.EditedMessage.Chat != nil {
+	if update.EditedMessage != nil {
 		if update.EditedMessage.Chat.UserName != "" {
 			return update.EditedMessage.Chat.UserName
 		}
